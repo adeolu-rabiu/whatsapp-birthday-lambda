@@ -1,0 +1,56 @@
+# Use AWS Lambda Python 3.9 as the base image
+FROM public.ecr.aws/lambda/python:3.9
+
+# Install necessary dependencies
+RUN yum install -y \
+    wget \
+    unzip \
+    libX11 \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXi \
+    libXtst \
+    cups-libs \
+    libXScrnSaver \
+    libXrandr \
+    alsa-lib \
+    pango \
+    atk \
+    at-spi2-atk \
+    gtk3 \
+    tzdata && \
+    yum clean all && rm -rf /var/cache/yum
+
+# Install Chromium from Chrome binary
+RUN mkdir -p /opt/chrome && \
+    cd /opt/chrome && \
+    wget https://chromedriver.storage.googleapis.com/111.0.5563.64/chromedriver_linux64.zip && \
+    unzip chromedriver_linux64.zip && \
+    rm chromedriver_linux64.zip && \
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y google-chrome-stable_current_x86_64.rpm && \
+    rm google-chrome-stable_current_x86_64.rpm
+
+# Add Chrome to PATH
+ENV PATH="/opt/chrome:${PATH}"
+
+# Set environment variables
+ENV TZ=UTC \
+    PYTHONUNBUFFERED=1 \
+    CHROME_BIN=/usr/bin/google-chrome \
+    CHROME_PATH=/usr/bin/google-chrome
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade --force-reinstall -r requirements.txt
+
+# Copy function code
+COPY app/scheduler/ ${LAMBDA_TASK_ROOT}
+COPY app/whatsapp/ ${LAMBDA_TASK_ROOT}/whatsapp/
+COPY app/db/ ${LAMBDA_TASK_ROOT}/db/
+
+# Set Lambda function handler
+CMD ["birthday_scheduler.handler"]
+
