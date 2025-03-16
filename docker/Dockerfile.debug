@@ -1,0 +1,8 @@
+# Use the existing image as base
+FROM whatsapp-bot
+
+# Copy the debug wrapper
+COPY docker/debug_birthday_scheduler.py ${LAMBDA_TASK_ROOT}/
+
+# Set the debug wrapper as the handler
+CMD ["debug_birthday_scheduler.handler"]

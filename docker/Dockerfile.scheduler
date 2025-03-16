@@ -43,14 +43,21 @@ ENV TZ=UTC \
     CHROME_PATH=/usr/bin/google-chrome
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade --force-reinstall -r requirements.txt
+COPY requirements.txt ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir --upgrade --force-reinstall -r ${LAMBDA_TASK_ROOT}/requirements.txt
 
-# Copy function code
-COPY app/scheduler/ ${LAMBDA_TASK_ROOT}
+# Copy function code to the correct structure
+COPY app/scheduler/birthday_scheduler.py ${LAMBDA_TASK_ROOT}/
 COPY app/whatsapp/ ${LAMBDA_TASK_ROOT}/whatsapp/
 COPY app/db/ ${LAMBDA_TASK_ROOT}/db/
 
+# Create __init__.py files to make Python packages
+RUN touch ${LAMBDA_TASK_ROOT}/whatsapp/__init__.py
+RUN touch ${LAMBDA_TASK_ROOT}/db/__init__.py
+
+# Enable verbose debugging
+ENV PYTHONVERBOSE=1
+ENV LAMBDA_TASK_ROOT=/var/task
+
 # Set Lambda function handler
 CMD ["birthday_scheduler.handler"]
-
