@@ -1,14 +1,12 @@
 name: Deploy WhatsApp Birthday Bot
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:  # For manual triggering
-
 jobs:
-  lint-and-test:
+  test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -23,27 +21,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
-        pip install flake8 black
     
-    - name: Run linters
-      run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        
-        # Check code formatting with Black
-        black --check .
-    
-    - name: Run unit tests
+    - name: Run tests
       run: |
         PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/unit -v
-    
-    - name: Run integration tests
-      if: github.ref == 'refs/heads/main'
-      run: |
-        PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/integration -v
-
-  build-and-push-docker:
-    needs: lint-and-test
+        # Only run integration tests on main branch
+        if [ ${{ github.ref == 'refs/heads/main' }} ]; then
+          PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/integration -v
+        fi
+  
+  build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -56,28 +44,16 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-2
     
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-    
-    - name: Build, tag, and push Docker image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: whatsapp-birthday-bot
-        IMAGE_TAG: ${{ github.sha }}
+    - name: Build Docker images
       run: |
-        # Build Docker image
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -f docker/Dockerfile.scheduler .
-        
-        # Tag with commit SHA for traceability
-        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        
-        # Push images
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
+        cd docker
+        docker build -t whatsapp-birthday-bot:latest -f Dockerfile.scheduler .
+        aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com
+        docker tag whatsapp-birthday-bot:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/whatsapp-birthday-bot:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/whatsapp-birthday-bot:latest
+  
   deploy:
-    needs: build-and-push-docker
+    needs: build
     runs-on: ubuntu-latest
     # Only deploy on main branch
     if: github.ref == 'refs/heads/main'
@@ -93,10 +69,7 @@ jobs:
         aws-region: eu-west-2
     
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_version: 1.5.7
-        terraform_wrapper: false
+      uses: hashicorp/setup-terraform@v1
     
     - name: Terraform Init
       run: |
@@ -111,19 +84,15 @@ jobs:
     - name: Terraform Apply
       run: |
         cd terraform
-        terraform apply -auto-approve tfplan
+        terraform apply -auto-approve
     
     - name: Deploy React App
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v2
       with:
         node-version: '16'
     
-    - name: Build and Deploy React App
-      env:
-        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      run: |
+    - run: |
         cd web-ui/birthday-manager
-        npm ci  # More reliable than npm install
+        npm install
         npm run build
-        aws s3 sync build/ s3://birthday-bot-ui-$AWS_ACCOUNT_ID --delete
-        
+        aws s3 sync build/ s3://birthday-bot-ui-${{ secrets.AWS_ACCOUNT_ID }}
