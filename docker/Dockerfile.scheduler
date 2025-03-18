@@ -2,25 +2,56 @@
 FROM public.ecr.aws/lambda/python:3.9
 
 # Install necessary dependencies
-RUN yum install -y     wget     unzip     libX11     libXcomposite     libXcursor     libXdamage     libXext     libXi     libXtst     cups-libs     libXScrnSaver     libXrandr     alsa-lib     pango     atk     at-spi2-atk     gtk3     tzdata     python3-pip &&     yum clean all && rm -rf /var/cache/yum
+RUN yum install -y \
+    wget \
+    unzip \
+    libX11 \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXi \
+    libXtst \
+    cups-libs \
+    libXScrnSaver \
+    libXrandr \
+    alsa-lib \
+    pango \
+    atk \
+    at-spi2-atk \
+    gtk3 \
+    tzdata \
+    python3-pip \
+    && yum clean all \
+    && rm -rf /var/cache/yum
 
 # Install Chrome and Chromedriver
-RUN mkdir -p /opt/chrome &&     cd /opt/chrome &&     wget https://chromedriver.storage.googleapis.com/111.0.5563.64/chromedriver_linux64.zip &&     unzip chromedriver_linux64.zip &&     rm chromedriver_linux64.zip &&     wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm &&     yum install -y google-chrome-stable_current_x86_64.rpm &&     rm google-chrome-stable_current_x86_64.rpm
+RUN mkdir -p /opt/chrome \
+    && cd /opt/chrome \
+    && wget https://chromedriver.storage.googleapis.com/111.0.5563.64/chromedriver_linux64.zip \
+    && unzip chromedriver_linux64.zip \
+    && rm chromedriver_linux64.zip \
+    && wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm \
+    && yum install -y google-chrome-stable_current_x86_64.rpm \
+    && rm google-chrome-stable_current_x86_64.rpm
 
 # Add Chrome to PATH
-ENV PATH="/opt/chrome:/home/agzo/.vscode/extensions/ms-python.python-2025.2.0-linux-x64/python_files/deactivate/bash:/home/agzo/whatsapp_birthday_bot/venv/bin:/home/agzo/.vscode/extensions/ms-python.python-2025.2.0-linux-x64/python_files/deactivate/bash:/home/agzo/whatsapp_birthday_bot/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin"
+ENV PATH="/opt/chrome:${PATH}"
 
 # Set environment variables
-ENV TZ=UTC     PYTHONUNBUFFERED=1     CHROME_BIN=/usr/bin/google-chrome     CHROME_PATH=/usr/bin/google-chrome
+ENV TZ=UTC \
+    PYTHONUNBUFFERED=1 \
+    CHROME_BIN=/usr/bin/google-chrome \
+    CHROME_PATH=/usr/bin/google-chrome
 
-# Copy requirements file and install dependencies with latest version
-COPY requirements.txt /var/task/
+# Copy requirements file from project root
+COPY ../requirements.txt /var/task/requirements.txt
 
-# Install packages without specific version constraints
-RUN pip3 install --no-cache-dir boto3 python-dateutil pytz pyvirtualdisplay requests &&     pip3 install --no-cache-dir selenium
+# Install Python dependencies
+RUN pip3 install --no-cache-dir -r /var/task/requirements.txt
 
-# Copy application code
-COPY app/ /var/task/app/
+# Copy application code from project root
+COPY ../app/ /var/task/app/
 
 # Set Lambda function handler
 CMD ["app.scheduler.birthday_scheduler.handler"]
