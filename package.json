@@ -5,5 +5,10 @@
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.7",
     "@mui/x-date-pickers": "^7.27.3"
+  },
+  "scripts": {
+    "test": "pytest",
+    "test:unit": "pytest tests/unit",
+    "test:integration": "pytest tests/integration"
   }
 }
