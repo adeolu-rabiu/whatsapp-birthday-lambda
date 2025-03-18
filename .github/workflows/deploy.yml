@@ -46,8 +46,8 @@ jobs:
     
     - name: Build Docker images
       run: |
-        cd docker
-        docker build -t whatsapp-birthday-bot:latest -f Dockerfile.scheduler .
+        # Run from project root so Docker can access all files
+        docker build -t whatsapp-birthday-bot:latest -f docker/Dockerfile.scheduler .
         aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com
         docker tag whatsapp-birthday-bot:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/whatsapp-birthday-bot:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/whatsapp-birthday-bot:latest
