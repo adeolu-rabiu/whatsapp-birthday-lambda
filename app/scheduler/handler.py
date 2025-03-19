@@ -1,105 +1,89 @@
-import datetime
+import pytest
+from unittest.mock import patch, MagicMock
+import sys
+import os
 import json
-import logging
-import boto3
-from app.lib import db, whatsapp
 
-# Configure logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+# Add app directory to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../app'))
 
-# Don't create the CloudWatch client at the module level
-# Instead, create it inside the function where it's needed
+# Import after path setup
+from app.scheduler.handler import get_todays_birthdays, lambda_handler
 
-def log_metrics(birthdays_count, message_count, error_count=0):
-    """
-    Log custom metrics to CloudWatch
-    """
-    try:
-        logger.info(f"Logging metrics: birthdays={birthdays_count}, messages={message_count}, errors={error_count}")
-        
-        # Create CloudWatch client inside the function
-        # This way it won't be initialized during test imports
-        cloudwatch = boto3.client('cloudwatch', region_name=boto3.session.Session().region_name or 'us-east-1')
-        
-        cloudwatch.put_metric_data(
-            Namespace='BirthdayBot',
-            MetricData=[
-                {
-                    'MetricName': 'BirthdaysProcessed',
-                    'Value': birthdays_count,
-                    'Unit': 'Count'
-                },
-                {
-                    'MetricName': 'MessagesSent',
-                    'Value': message_count,
-                    'Unit': 'Count'
-                },
-                {
-                    'MetricName': 'Errors',
-                    'Value': error_count,
-                    'Unit': 'Count'
-                }
-            ]
-        )
-    except Exception as e:
-        logger.error(f"Error logging metrics: {str(e)}")
+# Mock boto3 to prevent region errors
+@pytest.fixture(autouse=True)
+def mock_boto3():
+    with patch('boto3.client'):
+        with patch('boto3.session.Session'):
+            yield
 
-def get_todays_birthdays():
-    # Get today's date in MM-DD format
-    today = datetime.datetime.now().strftime("%m-%d")
-    logger.info(f"Checking birthdays for date: {today}")
+def test_get_todays_birthdays():
+    # Mock data for today's birthdays
+    mock_data = [
+        {"id": "1", "name": "John Doe", "birth_date": "1990-03-15", "message": "Happy Birthday!"},
+        {"id": "2", "name": "Jane Smith", "birth_date": "1985-03-15", "message": "Celebrate well!"}
+    ]
     
-    # Query DynamoDB for birthdays on this date
-    try:
-        birthdays = db.query_birthdays_by_date(today)
-        logger.info(f"Found {len(birthdays)} birthdays today")
-        return birthdays
-    except Exception as e:
-        logger.error(f"Error retrieving birthdays: {str(e)}")
-        log_metrics(0, 0, 1)  # Log error metric
-        return []
+    # Mock the db module
+    with patch('app.scheduler.handler.db.query_birthdays_by_date', return_value=mock_data):
+        # Set today's date to March 15
+        with patch('app.scheduler.handler.datetime') as mock_datetime:
+            mock_datetime.now.return_value.strftime.return_value = "03-15"
+            
+            # Mock log_metrics to prevent actual AWS calls
+            with patch('app.scheduler.handler.log_metrics'):
+                birthdays = get_todays_birthdays()
+                
+                # Assert we get back our mock data
+                assert len(birthdays) == 2
+                assert birthdays[0]['name'] == "John Doe"
+                assert birthdays[1]['name'] == "Jane Smith"
 
-def lambda_handler(event, context):
-    logger.info("Birthday notification lambda started")
+def test_lambda_handler():
+    # Mock the scheduler functions
+    with patch('app.scheduler.handler.get_todays_birthdays', return_value=[]) as mock_birthdays:
+        with patch('app.scheduler.handler.whatsapp.send_birthday_messages') as mock_send:
+            # Mock log_metrics to prevent actual AWS calls
+            with patch('app.scheduler.handler.log_metrics') as mock_metrics:
+                # Call lambda handler
+                result = lambda_handler({}, {})
+                
+                # Verify the functions were called
+                mock_birthdays.assert_called_once()
+                mock_send.assert_called_once_with([])
+                mock_metrics.assert_called_once_with(0, 0, 0)  # Verify metrics called with correct values
+                
+                # Check result has expected structure
+                assert 'statusCode' in result
+                assert result['statusCode'] == 200
+                body = json.loads(result['body'])
+                assert body['message'] == "Birthday notifications processed"
+                assert body['birthdays_processed'] == 0
+
+def test_lambda_handler_with_birthdays():
+    # Mock data for today's birthdays
+    mock_data = [
+        {"id": "1", "name": "John Doe", "birth_date": "1990-03-15", "message": "Happy Birthday!"},
+        {"id": "2", "name": "Jane Smith", "birth_date": "1985-03-15", "message": "Celebrate well!"}
+    ]
     
-    try:
-        # Get today's birthdays
-        birthdays = get_todays_birthdays()
-        
-        # Track successful messages and errors
-        success_count = 0
-        error_count = 0
-        
-        # Send WhatsApp messages
-        if birthdays:
-            for birthday in birthdays:
-                try:
-                    whatsapp.send_birthday_messages(birthday)
-                    success_count += 1
-                    logger.info(f"Successfully sent birthday message for {birthday.get('name', 'unknown')}")
-                except Exception as e:
-                    error_count += 1
-                    logger.error(f"Error sending birthday message: {str(e)}")
-        
-        # Log metrics to CloudWatch
-        log_metrics(len(birthdays), success_count, error_count)
-        
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': "Birthday notifications processed",
-                'birthdays_processed': len(birthdays),
-                'messages_sent': success_count,
-                'errors': error_count
-            })
-        }
-    except Exception as e:
-        logger.error(f"Lambda execution failed: {str(e)}")
-        log_metrics(0, 0, 1)  # Log error metric
-        return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': f"Error: {str(e)}"
-            })
-        }
+    # Mock the scheduler functions
+    with patch('app.scheduler.handler.get_todays_birthdays', return_value=mock_data) as mock_birthdays:
+        with patch('app.scheduler.handler.whatsapp.send_birthday_messages') as mock_send:
+            # Mock log_metrics to prevent actual AWS calls
+            with patch('app.scheduler.handler.log_metrics') as mock_metrics:
+                # Call lambda handler
+                result = lambda_handler({}, {})
+                
+                # Verify the functions were called
+                mock_birthdays.assert_called_once()
+                assert mock_send.call_count == 2  # Called once for each birthday
+                mock_metrics.assert_called_once_with(2, 2, 0)  # Verify metrics called with correct values
+                
+                # Check result has expected structure
+                assert 'statusCode' in result
+                assert result['statusCode'] == 200
+                body = json.loads(result['body'])
+                assert body['message'] == "Birthday notifications processed"
+                assert body['birthdays_processed'] == 2
+                assert body['messages_sent'] == 2
