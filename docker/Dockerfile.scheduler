@@ -44,14 +44,14 @@ ENV TZ=UTC \
     CHROME_BIN=/usr/bin/google-chrome \
     CHROME_PATH=/usr/bin/google-chrome
 
-# Copy requirements file from project root
-COPY ../requirements.txt /var/task/requirements.txt
+# Copy requirements file
+COPY requirements.txt /var/task/requirements.txt
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r /var/task/requirements.txt
 
-# Copy application code from project root
-COPY ../app/ /var/task/app/
+# Copy application code
+COPY app/ /var/task/app/
 
 # Set Lambda function handler
 CMD ["app.scheduler.birthday_scheduler.handler"]

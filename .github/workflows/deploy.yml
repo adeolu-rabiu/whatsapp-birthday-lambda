@@ -93,6 +93,6 @@ jobs:
     
     - run: |
         cd web-ui/birthday-manager
-        npm install
+        npm install --legacy-peer-deps
         npm run build
         aws s3 sync build/ s3://birthday-bot-ui-${{ secrets.AWS_ACCOUNT_ID }}
