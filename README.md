@@ -29,7 +29,46 @@ Key components:
 
 1. **Clone the repository**
 
+git clone https://github.com/yourusername/whatsapp-birthday-lambda.git
+cd whatsapp-birthday-lambda
+Copy
+2. **Configure AWS credentials**
+Set up your AWS credentials for Terraform:
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_DEFAULT_REGION="us-east-1"
+Copy
+3. **Initialize and apply Terraform**
+cd terraform
+terraform init
+terraform apply
+Copy
+4. **Deploy the web interface**
+cd ../web-ui/birthday-manager
+npm install
+npm run build
+aws s3 sync build/ s3://birthday-bot-ui-ACCOUNT_ID
+Copy
+5. **Set up WhatsApp session**
+Follow the instructions at `/setup` endpoint to authenticate your WhatsApp session.
 
+## Usage
+
+1. Access the web interface at `https://your-s3-bucket-url`
+2. Add birthdays with names, dates, and custom messages
+3. Configure WhatsApp groups to receive messages
+4. The system will automatically send messages at 6am on birthdays
+
+## Development
+
+### Local Testing
+cd app
+python -m pytest ../tests
+Copy
+### Building Docker Image
+cd docker
+docker build -t whatsapp-birthday-bot:latest .    
+-------------------------------------------------------------------------------------------------------
 1. Set Up Project Structure and Version Control
 2. Docker Setup with Alpine Linux
 3. Lambda Function for Birthday Scheduler
