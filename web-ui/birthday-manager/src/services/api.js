@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://your-api-gateway-url.execute-api.us-east-1.amazonaws.com/prod';
+// Update this URL with the actual API Gateway URL after Terraform deployment
+const API_URL = process.env.REACT_APP_API_URL || 'https://s9i0mo0564.execute-api.eu-west-2.amazonaws.com';
 
 const api = {
   getBirthdays: async () => {
@@ -59,6 +60,17 @@ const api = {
       return response.data;
     } catch (error) {
       console.error('Error adding WhatsApp group:', error);
+      throw error;
+    }
+  },
+  
+  // New method for testing WhatsApp messages
+  sendTestMessage: async (messageData) => {
+    try {
+      const response = await axios.post(`${API_URL}/test-message`, messageData);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending test message:', error);
       throw error;
     }
   }
