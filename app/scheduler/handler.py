@@ -8,8 +8,8 @@ from app.lib import db, whatsapp
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Create CloudWatch client
-cloudwatch = boto3.client('cloudwatch')
+# Don't create the CloudWatch client at the module level
+# Instead, create it inside the function where it's needed
 
 def log_metrics(birthdays_count, message_count, error_count=0):
     """
@@ -17,6 +17,11 @@ def log_metrics(birthdays_count, message_count, error_count=0):
     """
     try:
         logger.info(f"Logging metrics: birthdays={birthdays_count}, messages={message_count}, errors={error_count}")
+        
+        # Create CloudWatch client inside the function
+        # This way it won't be initialized during test imports
+        cloudwatch = boto3.client('cloudwatch', region_name=boto3.session.Session().region_name or 'us-east-1')
+        
         cloudwatch.put_metric_data(
             Namespace='BirthdayBot',
             MetricData=[
