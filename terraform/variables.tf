@@ -8,3 +8,8 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "admin_email" {
+  description = "Email address for receiving alerts"
+  type        = string
+  default     = "ksentries395@gmail.com"  # Optional default value
+}

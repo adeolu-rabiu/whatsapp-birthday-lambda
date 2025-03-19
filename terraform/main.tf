@@ -241,4 +241,21 @@ resource "aws_lambda_function" "birthday_api_handler" {
   source_code_hash = filebase64sha256("../api_lambda.zip")
 }
 
-
+# Update the existing Lambda role policy to include CloudWatch Metrics permissions
+resource "aws_iam_role_policy" "lambda_cloudwatch" {
+  name = "lambda_cloudwatch_access"
+  role = aws_iam_role.lambda_role.id
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "cloudwatch:PutMetricData"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
