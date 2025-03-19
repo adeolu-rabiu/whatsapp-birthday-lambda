@@ -19,7 +19,6 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import GroupsIcon from '@mui/icons-material/Groups';
-import CakeIcon from '@mui/icons-material/Cake'; // Replaced WhatsAppIcon with CakeIcon
 
 // Drawer width
 const DRAWER_WIDTH = 240;
