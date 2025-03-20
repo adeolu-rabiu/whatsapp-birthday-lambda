@@ -1,142 +1,140 @@
-import logo from '../logo.svg';
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Box,
-  Container,
-  useTheme,
-  Avatar,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider
-} from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import GroupsIcon from '@mui/icons-material/Groups';
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import Header from './Header';
 
-// Drawer width
-const DRAWER_WIDTH = 240;
+const WhatsAppGroupManager = () => {
+  const [groups, setGroups] = useState([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-function Header() {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Add Birthday', icon: <AddCircleIcon />, path: '/add' },
-    { text: 'WhatsApp Groups', icon: <GroupsIcon />, path: '/groups' }
-  ];
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const fetchGroups = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getWhatsAppGroups();
+      setGroups(data);
+    } catch (err) {
+      console.error('Error fetching WhatsApp groups:', err);
+      setError('Failed to load groups');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddGroup = async (e) => {
+    e.preventDefault();
+    
+    if (!newGroupName) {
+      setError('Group name is required');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      await api.addWhatsAppGroup({
+        name: newGroupName,
+        description: newGroupDescription
+      });
+      
+      // Clear form and refresh groups
+      setNewGroupName('');
+      setNewGroupDescription('');
+      fetchGroups();
+    } catch (err) {
+      console.error('Error adding WhatsApp group:', err);
+      setError('Failed to add group');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <AppBar 
-        position="fixed" 
-        color="primary" 
-        elevation={0}
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-      >
-        <Container maxWidth="xl">
-          <Toolbar sx={{ padding: { xs: 1, sm: 2 }, justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar 
-                src={logo}
-                alt="Logo"
-                sx={{ 
-                  width: 30, 
-                  height: 30, 
-                  mr: 1
-                }}
-              />
-              <Typography 
-                variant="h5" 
-                component="div" 
-                sx={{ 
-                  fontWeight: 'bold',
-                  display: { xs: 'none', sm: 'block' }
-                }}
-              >
-                Birthday Reminder
-              </Typography>
-            </Box>
-            
-            {/* Logo on the right */}
-            <Avatar 
-              src={logo}
-              alt="Birthday Reminder"
-              sx={{ 
-                width: 70, 
-                height: 70, 
-                bgcolor: theme.palette.primary.main
-              }}
-            />
-          </Toolbar>
-        </Container>
-      </AppBar>
+    <div className="whatsapp-group-manager">
+      <Header title="WhatsApp Groups" />
       
-      {/* Side Navigation Drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { 
-            width: DRAWER_WIDTH, 
-            boxSizing: 'border-box',
-            backgroundColor: theme.palette.background.paper,
-            borderRight: `1px solid ${theme.palette.divider}`
-          },
-        }}
-      >
-        <Toolbar /> {/* This ensures content starts below the AppBar */}
-        <Box sx={{ overflow: 'auto', mt: 2 }}>
-          <List>
-            {menuItems.map((item) => (
-              <ListItem 
-                button 
-                key={item.text}
-                onClick={() => navigate(item.path)}
-                selected={location.pathname === item.path}
-                sx={{
-                  mb: 1,
-                  borderRadius: '0 20px 20px 0',
-                  mr: 2,
-                  '&.Mui-selected': {
-                    backgroundColor: `${theme.palette.primary.main}20`,
-                    color: theme.palette.primary.main,
-                    '&:hover': {
-                      backgroundColor: `${theme.palette.primary.main}30`,
-                    },
-                  },
-                  '&:hover': {
-                    backgroundColor: `${theme.palette.primary.main}10`,
-                  }
-                }}
-              >
-                <ListItemIcon 
-                  sx={{ 
-                    color: location.pathname === item.path ? 
-                      theme.palette.primary.main : 'inherit',
-                    minWidth: 40
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
+      {error && <div className="error-message">{error}</div>}
+      
+      <div className="add-group-form">
+        <h2>Add New Group</h2>
+        <form onSubmit={handleAddGroup}>
+          <div className="form-group">
+            <label htmlFor="groupName">Group Name</label>
+            <input
+              type="text"
+              id="groupName"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="Enter group name"
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="groupDescription">Description (Optional)</label>
+            <textarea
+              id="groupDescription"
+              value={newGroupDescription}
+              onChange={(e) => setNewGroupDescription(e.target.value)}
+              placeholder="Enter group description"
+              rows="3"
+            />
+          </div>
+          
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Adding...' : 'Add Group'}
+          </button>
+        </form>
+      </div>
+      
+      <div className="groups-list">
+        <h2>Existing Groups</h2>
+        {loading && <div className="loading">Loading groups...</div>}
+        
+        {groups.length > 0 ? (
+          <ul className="groups">
+            {groups.map(group => (
+              <li key={group.group_id} className="group-item">
+                <div className="group-info">
+                  <h3>{group.name}</h3>
+                  {group.description && <p>{group.description}</p>}
+                </div>
+              </li>
             ))}
-          </List>
-          <Divider />
-        </Box>
-      </Drawer>
-    </>
+          </ul>
+        ) : (
+          <p>No WhatsApp groups found. Add your first one!</p>
+        )}
+      </div>
+      
+      {/* Add a test message feature */}
+      <div className="test-message-section">
+        <h2>Send Test Message</h2>
+        <button
+          className="btn-secondary"
+          onClick={async () => {
+            try {
+              await api.sendTestMessage({ message: "This is a test message" });
+              alert("Test message sent successfully!");
+            } catch (err) {
+              console.error("Error sending test message:", err);
+              alert("Failed to send test message");
+            }
+          }}
+        >
+          Send Test Message
+        </button>
+      </div>
+    </div>
   );
-}
+};
 
-export default Header;
+export default WhatsAppGroupManager;

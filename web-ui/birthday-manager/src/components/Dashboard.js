@@ -1,279 +1,273 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Card, 
-  CardContent, 
-  Grid, 
-  Chip, 
-  IconButton,
-  Paper,
-  useTheme
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { useBirthdays } from '../context/BirthdayContext';
+import api from '../services/api';
+import { format, differenceInDays } from 'date-fns';
+import Header from './Header';
 
-function Dashboard() {
-  const theme = useTheme();
-  const { birthdays, groups, deleteBirthday, getUpcomingBirthdays } = useBirthdays();
+const Dashboard = () => {
+  const [birthdays, setBirthdays] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBirthdays = async () => {
+      try {
+        setLoading(true);
+        // Clear any local storage that might be causing issues
+        localStorage.removeItem('birthdays');
+        
+        const data = await api.getBirthdays();
+        console.log('Fetched birthdays from API:', data);
+        setBirthdays(data);
+      } catch (err) {
+        console.error('Error fetching birthdays:', err);
+        setError('Failed to load birthdays. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBirthdays();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this birthday?')) {
+      try {
+        await api.deleteBirthday(id);
+        // Refresh the list after deletion
+        const updatedBirthdays = await api.getBirthdays();
+        setBirthdays(updatedBirthdays);
+      } catch (err) {
+        console.error('Error deleting birthday:', err);
+        setError('Failed to delete birthday. Please try again.');
+      }
+    }
+  };
+
+  const getUpcomingBirthdays = () => {
+    const today = new Date();
+    
+    // Filter birthdays happening in the next 30 days
+    return birthdays
+      .filter(birthday => {
+        if (!birthday.birth_date) return false;
+        
+        try {
+          // Parse the date correctly
+          const dateParts = birthday.birth_date.split('-');
+          if (dateParts.length !== 3) return false;
+          
+          const birthDate = new Date(
+            parseInt(dateParts[0]), 
+            parseInt(dateParts[1]) - 1, 
+            parseInt(dateParts[2])
+          );
+          
+          // Calculate next birthday
+          const nextBirthday = new Date(
+            today.getFullYear(),
+            birthDate.getMonth(),
+            birthDate.getDate()
+          );
+          
+          if (nextBirthday < today) {
+            nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
+          }
+          
+          const daysUntil = differenceInDays(nextBirthday, today);
+          return daysUntil <= 30;
+        } catch (err) {
+          console.error('Error parsing date:', err, birthday.birth_date);
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        const datePartsA = a.birth_date.split('-');
+        const datePartsB = b.birth_date.split('-');
+        
+        const birthDateA = new Date(
+          parseInt(datePartsA[0]), 
+          parseInt(datePartsA[1]) - 1, 
+          parseInt(datePartsA[2])
+        );
+        
+        const birthDateB = new Date(
+          parseInt(datePartsB[0]), 
+          parseInt(datePartsB[1]) - 1, 
+          parseInt(datePartsB[2])
+        );
+        
+        const nextBirthdayA = new Date(
+          today.getFullYear(),
+          birthDateA.getMonth(),
+          birthDateA.getDate()
+        );
+        
+        const nextBirthdayB = new Date(
+          today.getFullYear(),
+          birthDateB.getMonth(),
+          birthDateB.getDate()
+        );
+        
+        if (nextBirthdayA < today) {
+          nextBirthdayA.setFullYear(nextBirthdayA.getFullYear() + 1);
+        }
+        
+        if (nextBirthdayB < today) {
+          nextBirthdayB.setFullYear(nextBirthdayB.getFullYear() + 1);
+        }
+        
+        return nextBirthdayA - nextBirthdayB;
+      });
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      if (!dateString) return 'No date';
+      
+      const dateParts = dateString.split('-');
+      if (dateParts.length !== 3) return dateString;
+      
+      const date = new Date(
+        parseInt(dateParts[0]), 
+        parseInt(dateParts[1]) - 1, 
+        parseInt(dateParts[2])
+      );
+      
+      return format(date, 'MMMM d, yyyy');
+    } catch (err) {
+      console.error('Error formatting date:', err, dateString);
+      return dateString;
+    }
+  };
+
+  const getDaysUntilBirthday = (dateString) => {
+    try {
+      if (!dateString) return null;
+      
+      const dateParts = dateString.split('-');
+      if (dateParts.length !== 3) return null;
+      
+      const today = new Date();
+      const birthDate = new Date(
+        parseInt(dateParts[0]), 
+        parseInt(dateParts[1]) - 1, 
+        parseInt(dateParts[2])
+      );
+      
+      const nextBirthday = new Date(
+        today.getFullYear(),
+        birthDate.getMonth(),
+        birthDate.getDate()
+      );
+      
+      if (nextBirthday < today) {
+        nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
+      }
+      
+      return differenceInDays(nextBirthday, today);
+    } catch (err) {
+      console.error('Error calculating days until birthday:', err, dateString);
+      return null;
+    }
+  };
+
+  const getAgeFromBirthdate = (dateString) => {
+    try {
+      if (!dateString) return null;
+      
+      const dateParts = dateString.split('-');
+      if (dateParts.length !== 3) return null;
+      
+      const birthDate = new Date(
+        parseInt(dateParts[0]), 
+        parseInt(dateParts[1]) - 1, 
+        parseInt(dateParts[2])
+      );
+      
+      const today = new Date();
+      
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDifference = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return age;
+    } catch (err) {
+      console.error('Error calculating age:', err, dateString);
+      return null;
+    }
+  };
+
   const upcomingBirthdays = getUpcomingBirthdays();
 
-  // Function to calculate days until birthday
-  const getDaysUntilBirthday = (birthDateStr) => {
-    const today = new Date();
-    const birthDate = new Date(birthDateStr);
-    const currentYear = today.getFullYear();
-    
-    // Set birth date to this year
-    const thisYearBirthday = new Date(
-      currentYear,
-      birthDate.getMonth(),
-      birthDate.getDate()
-    );
-    
-    // If birthday has already passed this year, calculate for next year
-    if (thisYearBirthday < today) {
-      thisYearBirthday.setFullYear(currentYear + 1);
-    }
-    
-    // Calculate difference in days
-    const diffTime = thisYearBirthday - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays;
-  };
-
-  // Function to get age from birth date
-  const getAge = (birthDateStr) => {
-    const birthDate = new Date(birthDateStr);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  // Function to get the group name from ID
-  const getGroupName = (groupId) => {
-    const group = groups.find(g => g.id === groupId);
-    return group ? group.name : groupId; // Fallback to ID if not found
-  };
-
-  const handleDelete = (id, event) => {
-    event.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this birthday?')) {
-      deleteBirthday(id);
-    }
-  };
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
-    <Box>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 4,
-          borderRadius: 2,
-          background: `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}
-      >
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Birthday Dashboard
-          </Typography>
-          <Typography variant="subtitle1">
-            Keep track of all your important dates
-          </Typography>
-        </Box>
-        <Button
-          component={Link}
-          to="/add"
-          variant="contained"
-          color="secondary"
-          startIcon={<AddIcon />}
-          sx={{ bgcolor: 'white', color: theme.palette.primary.main }}
-        >
-          Add Birthday
-        </Button>
-      </Paper>
-
-      {/* Upcoming Birthdays */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 2 }}>
-          Upcoming Birthdays
-        </Typography>
-        
-        {upcomingBirthdays.length === 0 ? (
-          <Paper sx={{ p: 3, borderRadius: 2, bgcolor: '#f5f5f5' }}>
-            <Typography variant="body1">No upcoming birthdays in the next 30 days.</Typography>
-          </Paper>
-        ) : (
-          <Grid container spacing={3}>
-            {upcomingBirthdays.map((birthday) => (
-              <Grid item xs={12} sm={6} md={4} key={birthday.id}>
-                <Card 
-                  elevation={2} 
-                  sx={{ 
-                    borderRadius: 2,
-                    bgcolor: theme.palette.success.light,
-                    color: 'white',
-                    height: '100%'
-                  }}
+    <div className="dashboard">
+      <Header title="Birthday Dashboard" />
+      <p className="subtitle">Keep track of all your important dates</p>
+      
+      <Link to="/add" className="btn-add">+ Add Birthday</Link>
+      
+      <h2>Upcoming Birthdays</h2>
+      <div className="birthday-cards">
+        {upcomingBirthdays.length > 0 ? (
+          upcomingBirthdays.map(birthday => (
+            <div key={birthday.birthday_id} className="birthday-card upcoming">
+              <div className="age-badge">{getAgeFromBirthdate(birthday.birth_date)}</div>
+              <h3>{birthday.name}</h3>
+              <p>{formatDate(birthday.birth_date)}</p>
+              <span className="group-tag">{birthday.group_id}</span>
+              <span className="days-badge">{getDaysUntilBirthday(birthday.birth_date)} days</span>
+              <div className="actions">
+                <Link to={`/edit/${birthday.birthday_id}`} className="edit-btn">
+                  Edit
+                </Link>
+                <button 
+                  className="delete-btn"
+                  onClick={() => handleDelete(birthday.birthday_id)}
                 >
-                  <CardContent>
-                    <Box sx={{ display: 'flex', mb: 1, alignItems: 'center' }}>
-                      <Box sx={{ 
-                        width: 40, 
-                        height: 40, 
-                        borderRadius: '50%', 
-                        bgcolor: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mr: 2,
-                        color: theme.palette.success.main
-                      }}>
-                        <Typography variant="h6">{getAge(birthday.birthDate)}</Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="h6" component="div">
-                          {birthday.name}
-                        </Typography>
-                        <Typography variant="body2">
-                          {new Date(birthday.birthDate).toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{ display: 'flex', mt: 2, mb: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Chip 
-                        label={getGroupName(birthday.group)} 
-                        size="small" 
-                        sx={{ 
-                          bgcolor: 'rgba(255,255,255,0.3)', 
-                          color: 'white',
-                          '& .MuiChip-label': { px: 1 }
-                        }} 
-                      />
-                      <Chip 
-                        label={`${getDaysUntilBirthday(birthday.birthDate)} days`} 
-                        size="small"
-                        sx={{ 
-                          bgcolor: 'white', 
-                          color: theme.palette.success.dark,
-                          fontWeight: 'bold',
-                          '& .MuiChip-label': { px: 1 }
-                        }} 
-                      />
-                    </Box>
-                    
-                    {birthday.notes && (
-                      <Typography variant="body2" sx={{ mt: 1, mb: 1, color: 'rgba(255,255,255,0.9)' }}>
-                        {birthday.notes}
-                      </Typography>
-                    )}
-                    
-                    <Box sx={{ display: 'flex', mt: 2, justifyContent: 'flex-start' }}>
-                      <IconButton 
-                        component={Link} 
-                        to={`/edit/${birthday.id}`} 
-                        size="small"
-                        sx={{ color: 'white', mr: 1 }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small"
-                        sx={{ color: 'white' }}
-                        onClick={(e) => handleDelete(birthday.id, e)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
-
-      {/* All Birthdays */}
-      <Box>
-        <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 2 }}>
-          All Birthdays
-        </Typography>
-        
-        {birthdays.length === 0 ? (
-          <Paper sx={{ p: 3, borderRadius: 2, bgcolor: '#f5f5f5' }}>
-            <Typography variant="body1">
-              You haven't added any birthdays yet. Click the "Add Birthday" button to get started.
-            </Typography>
-          </Paper>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
         ) : (
-          <Grid container spacing={3}>
-            {birthdays.map((birthday) => (
-              <Grid item xs={12} sm={6} md={4} key={birthday.id}>
-                <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="h6" component="div">
-                      {birthday.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {new Date(birthday.birthDate).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </Typography>
-                    
-                    <Chip 
-                      label={getGroupName(birthday.group)} 
-                      size="small" 
-                      sx={{ mt: 1, mb: 1 }} 
-                    />
-                    
-                    <Box sx={{ display: 'flex', mt: 2, justifyContent: 'flex-start' }}>
-                      <IconButton 
-                        component={Link} 
-                        to={`/edit/${birthday.id}`} 
-                        size="small"
-                        color="primary"
-                        sx={{ mr: 1 }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small"
-                        color="error"
-                        onClick={(e) => handleDelete(birthday.id, e)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+          <p>No upcoming birthdays in the next 30 days</p>
         )}
-      </Box>
-    </Box>
+      </div>
+      
+      <h2>All Birthdays</h2>
+      <div className="birthday-cards">
+        {birthdays.length > 0 ? (
+          birthdays.map(birthday => (
+            <div key={birthday.birthday_id} className="birthday-card">
+              <h3>{birthday.name}</h3>
+              <p>{formatDate(birthday.birth_date)}</p>
+              <span className="group-tag">{birthday.group_id}</span>
+              <div className="actions">
+                <Link to={`/edit/${birthday.birthday_id}`} className="edit-btn">
+                  Edit
+                </Link>
+                <button 
+                  className="delete-btn"
+                  onClick={() => handleDelete(birthday.birthday_id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p>No birthdays found. Add your first one!</p>
+        )}
+      </div>
+    </div>
   );
-}
+};
 
 export default Dashboard;

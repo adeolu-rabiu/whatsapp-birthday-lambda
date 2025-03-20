@@ -1,236 +1,140 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Card, 
-  CardContent, 
-  Grid, 
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Paper,
-  useTheme
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import PeopleIcon from '@mui/icons-material/People';
-import { useBirthdays } from '../context/BirthdayContext';
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import Header from './Header';
 
-function WhatsAppGroupManager() {
-  const theme = useTheme();
-  const { groups, addGroup, updateGroup, deleteGroup, getBirthdaysByGroup } = useBirthdays();
-  
-  const [openDialog, setOpenDialog] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentGroup, setCurrentGroup] = useState({ id: '', name: '', description: '', memberCount: 0 });
-  const [dialogError, setDialogError] = useState('');
+const WhatsAppGroupManager = () => {
+  const [groups, setGroups] = useState([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleOpenAddDialog = () => {
-    setCurrentGroup({ id: '', name: '', description: '', memberCount: 0 });
-    setIsEditing(false);
-    setDialogError('');
-    setOpenDialog(true);
-  };
+  useEffect(() => {
+    fetchGroups();
+  }, []);
 
-  const handleOpenEditDialog = (group) => {
-    setCurrentGroup({
-      id: group.id,
-      name: group.name,
-      description: group.description || '',
-      memberCount: group.memberCount || 0
-    });
-    setIsEditing(true);
-    setDialogError('');
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentGroup({
-      ...currentGroup,
-      [name]: value
-    });
-  };
-
-  const handleSubmit = () => {
-    if (!currentGroup.name.trim()) {
-      setDialogError('Group name is required');
-      return;
-    }
-
+  const fetchGroups = async () => {
     try {
-      if (isEditing) {
-        updateGroup(currentGroup.id, currentGroup);
-      } else {
-        addGroup(currentGroup);
-      }
-      handleCloseDialog();
-    } catch (error) {
-      setDialogError('Failed to save group. Please try again.');
+      setLoading(true);
+      const data = await api.getWhatsAppGroups();
+      setGroups(data);
+    } catch (err) {
+      console.error('Error fetching WhatsApp groups:', err);
+      setError('Failed to load groups');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (id) => {
-    // Check if any birthdays are using this group
-    const birthdaysInGroup = getBirthdaysByGroup(id);
+  const handleAddGroup = async (e) => {
+    e.preventDefault();
     
-    if (birthdaysInGroup.length > 0) {
-      alert(`Cannot delete this group. It is associated with ${birthdaysInGroup.length} birthdays.`);
+    if (!newGroupName) {
+      setError('Group name is required');
       return;
     }
     
-    if (window.confirm('Are you sure you want to delete this group?')) {
-      deleteGroup(id);
+    try {
+      setLoading(true);
+      await api.addWhatsAppGroup({
+        name: newGroupName,
+        description: newGroupDescription
+      });
+      
+      // Clear form and refresh groups
+      setNewGroupName('');
+      setNewGroupDescription('');
+      fetchGroups();
+    } catch (err) {
+      console.error('Error adding WhatsApp group:', err);
+      setError('Failed to add group');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Box>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 4,
-          borderRadius: 2,
-          background: `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}
-      >
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            WhatsApp Groups
-          </Typography>
-          <Typography variant="subtitle1">
-            Manage your WhatsApp groups for birthday notifications
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handleOpenAddDialog}
-          startIcon={<AddIcon />}
-          sx={{ bgcolor: 'white', color: theme.palette.primary.main }}
+    <div className="whatsapp-group-manager">
+      <Header title="WhatsApp Groups" />
+      
+      {error && <div className="error-message">{error}</div>}
+      
+      <div className="add-group-form">
+        <h2>Add New Group</h2>
+        <form onSubmit={handleAddGroup}>
+          <div className="form-group">
+            <label htmlFor="groupName">Group Name</label>
+            <input
+              type="text"
+              id="groupName"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="Enter group name"
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="groupDescription">Description (Optional)</label>
+            <textarea
+              id="groupDescription"
+              value={newGroupDescription}
+              onChange={(e) => setNewGroupDescription(e.target.value)}
+              placeholder="Enter group description"
+              rows="3"
+            />
+          </div>
+          
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Adding...' : 'Add Group'}
+          </button>
+        </form>
+      </div>
+      
+      <div className="groups-list">
+        <h2>Existing Groups</h2>
+        {loading && <div className="loading">Loading groups...</div>}
+        
+        {groups.length > 0 ? (
+          <ul className="groups">
+            {groups.map(group => (
+              <li key={group.group_id} className="group-item">
+                <div className="group-info">
+                  <h3>{group.name}</h3>
+                  {group.description && <p>{group.description}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No WhatsApp groups found. Add your first one!</p>
+        )}
+      </div>
+      
+      {/* Add a test message feature */}
+      <div className="test-message-section">
+        <h2>Send Test Message</h2>
+        <button
+          className="btn-secondary"
+          onClick={async () => {
+            try {
+              await api.sendTestMessage({ message: "This is a test message" });
+              alert("Test message sent successfully!");
+            } catch (err) {
+              console.error("Error sending test message:", err);
+              alert("Failed to send test message");
+            }
+          }}
         >
-          Add Group
-        </Button>
-      </Paper>
-
-      {/* Display Groups */}
-      <Grid container spacing={3}>
-        {groups.map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.id}>
-            <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <WhatsAppIcon sx={{ color: '#25D366', mr: 1 }} />
-                  <Typography variant="h6" component="div">
-                    {group.name}
-                  </Typography>
-                </Box>
-
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {group.description || 'No description available'}
-                </Typography>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <PeopleIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {group.memberCount || 0} members
-                  </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', mt: 2, justifyContent: 'flex-start' }}>
-                  <IconButton 
-                    size="small"
-                    color="primary"
-                    sx={{ mr: 1 }}
-                    onClick={() => handleOpenEditDialog(group)}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton 
-                    size="small"
-                    color="error"
-                    onClick={() => handleDelete(group.id)}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle>{isEditing ? 'Edit WhatsApp Group' : 'Add WhatsApp Group'}</DialogTitle>
-        <DialogContent>
-          {dialogError && (
-            <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-              {dialogError}
-            </Typography>
-          )}
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Group Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={currentGroup.name}
-            onChange={handleChange}
-            required
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            name="description"
-            label="Description"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={currentGroup.description}
-            onChange={handleChange}
-            multiline
-            rows={3}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            name="memberCount"
-            label="Number of Members"
-            type="number"
-            fullWidth
-            variant="outlined"
-            value={currentGroup.memberCount}
-            onChange={handleChange}
-            InputProps={{ inputProps: { min: 0 } }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
-            {isEditing ? 'Update' : 'Add'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+          Send Test Message
+        </button>
+      </div>
+    </div>
   );
-}
+};
 
 export default WhatsAppGroupManager;

@@ -1,121 +1,79 @@
-import json
-import boto3
-import os
-import uuid
-from datetime import datetime
+import axios from 'axios';
 
-# Initialize DynamoDB resources
-dynamodb = boto3.resource('dynamodb')
-birthdays_table = dynamodb.Table(os.environ['BIRTHDAYS_TABLE'])
-groups_table = dynamodb.Table(os.environ['GROUPS_TABLE'])
+// Update this URL with the actual API Gateway URL after Terraform deployment
+const API_URL = process.env.REACT_APP_API_URL || 'https://s9i0mo0564.execute-api.eu-west-2.amazonaws.com/$default';
 
-def handler(event, context):
-    print(f"Event: {json.dumps(event)}")
-    
-    # Extract route key from event
-    route_key = event.get('routeKey', '')
-    
-    # Common headers for CORS
-    headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Content-Type': 'application/json'
+const api = {
+  getBirthdays: async () => {
+    try {
+      const response = await axios.get(`${API_URL}/birthdays`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching birthdays:', error);
+      throw error;
     }
-    
-    # Handle OPTIONS requests for CORS
-    if event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
-        return {
-            'statusCode': 200,
-            'headers': headers,
-            'body': json.dumps({'message': 'CORS preflight request successful'})
-        }
-    
-    try:
-        # Route request to appropriate handler
-        if route_key == 'GET /birthdays':
-            return get_birthdays(headers)
-        elif route_key == 'POST /birthdays':
-            return add_birthday(event, headers)
-        elif route_key == 'GET /groups':
-            return get_groups(headers)
-        elif route_key == 'POST /groups':
-            return add_group(event, headers)
-        elif route_key == 'POST /test-message':
-            return send_test_message(event, headers)
-        else:
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps({'error': 'Not Found'})
-            }
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': headers,
-            'body': json.dumps({'error': str(e)})
-        }
+  },
+  
+  addBirthday: async (birthday) => {
+    try {
+      const response = await axios.post(`${API_URL}/birthdays`, birthday);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding birthday:', error);
+      throw error;
+    }
+  },
+  
+  updateBirthday: async (id, birthday) => {
+    try {
+      const response = await axios.put(`${API_URL}/birthdays/${id}`, birthday);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating birthday:', error);
+      throw error;
+    }
+  },
+  
+  deleteBirthday: async (id) => {
+    try {
+      await axios.delete(`${API_URL}/birthdays/${id}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting birthday:', error);
+      throw error;
+    }
+  },
+  
+  getWhatsAppGroups: async () => {
+    try {
+      const response = await axios.get(`${API_URL}/groups`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching WhatsApp groups:', error);
+      throw error;
+    }
+  },
+  
+  addWhatsAppGroup: async (group) => {
+    try {
+      const response = await axios.post(`${API_URL}/groups`, group);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding WhatsApp group:', error);
+      throw error;
+    }
+  },
+  
+  // New method for testing WhatsApp messages
+  sendTestMessage: async (messageData) => {
+    try {
+      const response = await axios.post(`${API_URL}/test-message`, messageData);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending test message:', error);
+      throw error;
+    }
+  }
+};
 
-def get_birthdays(headers):
-    response = birthdays_table.scan()
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps(response.get('Items', []))
-    }
-
-def add_birthday(event, headers):
-    body = json.loads(event.get('body', '{}'))
-    
-    birthday_item = {
-        'birthday_id': str(uuid.uuid4()),
-        'name': body.get('name', ''),
-        'birth_date': body.get('birthDate', ''),
-        'group_id': body.get('groupId', ''),
-        'birth_month_day': body.get('birthMonthDay', ''),  # Format: MM-DD
-        'created_at': datetime.now().isoformat()
-    }
-    
-    birthdays_table.put_item(Item=birthday_item)
-    
-    return {
-        'statusCode': 201,
-        'headers': headers,
-        'body': json.dumps(birthday_item)
-    }
-
-def get_groups(headers):
-    response = groups_table.scan()
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps(response.get('Items', []))
-    }
-
-def add_group(event, headers):
-    body = json.loads(event.get('body', '{}'))
-    
-    group_item = {
-        'group_id': str(uuid.uuid4()),
-        'name': body.get('name', ''),
-        'description': body.get('description', ''),
-        'created_at': datetime.now().isoformat()
-    }
-    
-    groups_table.put_item(Item=group_item)
-    
-    return {
-        'statusCode': 201,
-        'headers': headers,
-        'body': json.dumps(group_item)
-    }
-
-def send_test_message(event, headers):
-    # This would call your WhatsApp sender Lambda
-    # For now, we'll just return success
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps({'message': 'Test message sent successfully'})
-    }
+export default api;

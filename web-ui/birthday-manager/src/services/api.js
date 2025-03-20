@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Update this URL with the actual API Gateway URL after Terraform deployment
-const API_URL = process.env.REACT_APP_API_URL || 'https://s9i0mo0564.execute-api.eu-west-2.amazonaws.com';
+// Update this URL with your actual API Gateway URL
+const API_URL = 'https://s9i0mo0564.execute-api.eu-west-2.amazonaws.com';
 
 const api = {
   getBirthdays: async () => {
@@ -64,7 +64,6 @@ const api = {
     }
   },
   
-  // New method for testing WhatsApp messages
   sendTestMessage: async (messageData) => {
     try {
       const response = await axios.post(`${API_URL}/test-message`, messageData);

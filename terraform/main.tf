@@ -112,7 +112,10 @@ resource "aws_apigatewayv2_api" "birthday_api" {
   name          = "birthday-bot-api"
   protocol_type = "HTTP"
   cors_configuration {
-    allow_origins = ["http://birthday-bot-ui-${data.aws_caller_identity.current.account_id}.s3-website.eu-west-2.amazonaws.com"]
+    allow_origins = [
+	"http://birthday-bot-ui-${data.aws_caller_identity.current.account_id}.s3-website.eu-west-2.amazonaws.com",
+	"http://localhost:3000"
+	]
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allow_headers = ["Content-Type", "Authorization"]
     allow_credentials = true
@@ -196,6 +199,32 @@ resource "aws_apigatewayv2_route" "get_birthdays" {
 resource "aws_apigatewayv2_route" "post_birthday" {
   api_id    = aws_apigatewayv2_api.birthday_api.id
   route_key = "POST /birthdays"
+  target    = "integrations/${aws_apigatewayv2_integration.birthdays_integration.id}"
+}
+
+# Option routes for CORS
+resource "aws_apigatewayv2_route" "options_birthdays" {
+  api_id    = aws_apigatewayv2_api.birthday_api.id
+  route_key = "OPTIONS /birthdays"
+  target    = "integrations/${aws_apigatewayv2_integration.birthdays_integration.id}"
+}
+
+# Add the missing PUT and DELETE routes
+resource "aws_apigatewayv2_route" "put_birthday" {
+  api_id    = aws_apigatewayv2_api.birthday_api.id
+  route_key = "PUT /birthdays/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.birthdays_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "delete_birthday" {
+  api_id    = aws_apigatewayv2_api.birthday_api.id
+  route_key = "DELETE /birthdays/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.birthdays_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_test_message" {
+  api_id    = aws_apigatewayv2_api.birthday_api.id
+  route_key = "POST /test-message"
   target    = "integrations/${aws_apigatewayv2_integration.birthdays_integration.id}"
 }
 
