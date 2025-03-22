@@ -1,3 +1,0 @@
-Building codeuri: /home/agzo/whatsapp-birthday-lambda/api_lambda runtime: python3.9 architecture: x86_64 functions: BirthdayLambdaFunction
- Running PythonPipBuilder:ResolveDependencies
- Running PythonPipBuilder:CopySource

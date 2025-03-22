@@ -1,6 +1,39 @@
+# Project Docs & Assets
 Whatsapp_bot_Project.md
-awscliv2.zip
-AWSCLIV2.pkg
 Whatsapp_Birthday Reminder BOT_Architectural Diagram.png
 Whatsapp_Birthday Reminder BOT_Process Flowchart.png
 whatsapp_birthday_flowchart.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.log
+nohup.out
+.env
+venv/
+
+# Node.js
+node_modules/
+web-ui/node_modules/
+dist/
+build/
+
+# AWS SAM & CLI
+.aws-sam/
+aws/
+AWSCLIV2.pkg
+awscliv2.zip
+aws-sam-cli-linux.zip
+
+
+# Backup/swap files
+*~
+*.swp
+*.swo
+
+
+# Ignore Terraform build artifacts
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log

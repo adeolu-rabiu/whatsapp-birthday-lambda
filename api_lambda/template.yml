@@ -2,6 +2,11 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: WhatsApp Birthday Reminder Lambda API
 
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.9
+
 Resources:
   BirthdayLambdaFunction:
     Type: AWS::Serverless::Function
@@ -9,11 +14,15 @@ Resources:
       FunctionName: BirthdayLambda
       Handler: lambda_function.lambda_handler
       Runtime: python3.9
-      CodeUri: .
+      CodeUri: ../  # 👈 This is the key change
       MemorySize: 128
       Timeout: 30
       Policies:
         - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          AUTH_TOKEN: 2e58df99b9011ea1257bef6c0026bc3b9a2daa3543ff6b8f241c129f09646a7a
+          AWS_DEFAULT_REGION: eu-west-2
       Events:
         GetBirthdays:
           Type: Api

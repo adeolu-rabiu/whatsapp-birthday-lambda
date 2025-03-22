@@ -1,7 +1,0 @@
-[
- {
-  "op": "add",
-  "path": "/definitions/CloudwatchLogsAction/properties/LogGroupName/format",
-  "value": "AWS::Logs::LogGroup.Name"
- }
-]

@@ -1,7 +1,0 @@
-Mounting BirthdayLambdaFunction at http://127.0.0.1:3001/birthdays [GET]
-You can now browse to the above endpoints to invoke your functions. You do not need to restart/reload SAM CLI while working on your functions, changes will be reflected instantly/automatically. If you used sam build before running local commands, you will need to re-run sam build for the changes to be picked up. You only need to restart SAM CLI if you update your AWS SAM template
-2025-03-21 02:44:28 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on http://127.0.0.1:3001
-2025-03-21 02:44:28 [33mPress CTRL+C to quit[0m
-2025-03-21 02:45:13 127.0.0.1 - - [21/Mar/2025 02:45:13] "[31m[1mGET / HTTP/1.1[0m" 403 -
-2025-03-21 02:45:13 127.0.0.1 - - [21/Mar/2025 02:45:13] "[31m[1mGET /favicon.ico HTTP/1.1[0m" 403 -

@@ -1,9 +1,0 @@
-Birthday scheduler lambda starting...
-Python version: 3.12.3 (main, Feb  4 2025, 14:48:35) [GCC 13.3.0]
-Current directory: /home/agzo/whatsapp-birthday-lambda/app/scheduler
-Directory contents: ['__pycache__', 'scheduler.log', 'birthday_scheduler.py', 'debug_birthday_scheduler.py', 'handler.py', '__init__.py', 'birthday_scheduler_debug.py']
-Initializing components...
-Looking for birthdays on date: 03-21
-Found 1 WhatsApp groups
-Found 0 birthdays in group 'Unknown Group' for today
-Birthday scheduler completed successfully
