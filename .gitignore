@@ -102,3 +102,5 @@ nohup.out
 
 service-manager_v4.sh
 .env
+.aws/credentials
+.aws/
