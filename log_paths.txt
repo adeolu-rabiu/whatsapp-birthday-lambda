@@ -1,0 +1,10 @@
+/home/agzo/whatsapp-birthday-lambda/cron.log
+/home/agzo/whatsapp-birthday-lambda/app/scheduler/scheduler.log
+/home/agzo/whatsapp-birthday-lambda/app/whatsapp/whatsapp.log
+/home/agzo/whatsapp-birthday-lambda/app/whatsapp/logs/whatsapp_birthday_service.log
+/home/agzo/whatsapp-birthday-lambda/app/whatsapp/.used_fun_facts.log
+/home/agzo/whatsapp-birthday-lambda/web-ui/birthday-manager/web-ui.log
+/home/agzo/whatsapp-birthday-lambda/service_manager_errors.log
+/home/agzo/whatsapp-birthday-lambda/logs/birthday_service.log
+/home/agzo/whatsapp-birthday-lambda/logs/web-ui.log
+/home/agzo/whatsapp-birthday-lambda/logs/whatsapp_birthday_service.log

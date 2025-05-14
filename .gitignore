@@ -1,0 +1,104 @@
+# Project Docs & Assets
+Whatsapp_bot_Project.md
+Whatsapp_Birthday Reminder BOT_Architectural Diagram.png
+Whatsapp_Birthday Reminder BOT_Process Flowchart.png
+whatsapp_birthday_flowchart.png
+fun_facts_no_blank_lines.txt
+# Python
+__pycache__/
+*.py[cod]
+*.log
+nohup.out
+.env
+venv/
+
+# Node.js
+node_modules/
+web-ui/node_modules/
+dist/
+build/
+filebeat.yml
+
+# AWS SAM & CLI
+.aws-sam/
+aws/
+AWSCLIV2.pkg
+awscliv2.zip
+aws-sam-cli-linux.zip
+
+
+# Backup/swap files
+*~
+*.swp
+*.swo
+
+
+# Ignore Terraform build artifacts
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+lambda-backups/
+
+
+
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+*.db
+*.egg-info/
+.env
+*.pem
+
+# React / Node
+node_modules/
+build/
+dist/
+.env.local
+.env.development
+.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# AWS SAM / Lambda
+.aws-sam/
+*.zip
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# Chrome Profile / Browser automation
+app/whatsapp/chrome_profile_*/
+
+# Logs
+*.log
+*.log.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled Bytecode
+*.so
+*.dll
+*.out
+*.exe
+
+# Virtualenv
+venv/
+ENV/
+env/
+
+# Other
+*.bak
+nohup.out
+
+
+service-manager_v4.sh
+.env

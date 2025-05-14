@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WhatsApp Birthday Bot Status</title>
+    <script>
+        const apiBase = "https://s9i0mo0564.execute-api.eu-west-2.amazonaws.com";
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch(`${apiBase}/birthdays`, { method: "GET" });
+                const data = await res.json();
+                document.getElementById("response").innerText = JSON.stringify(data, null, 2);
+                document.getElementById("status").innerText = "Connected";
+                document.getElementById("status").style.backgroundColor = "green";
+            } catch (error) {
+                document.getElementById("response").innerText = `Error: ${error.message}`;
+                document.getElementById("status").innerText = "Error";
+                document.getElementById("status").style.backgroundColor = "red";
+            }
+        }
+
+        async function checkBirthdays() {
+            try {
+                const res = await fetch(`${apiBase}/birthdays`, { method: "POST" });
+                const data = await res.json();
+                document.getElementById("response").innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById("response").innerText = `Error: ${error.message}`;
+            }
+        }
+
+        async function sendTestMessage() {
+            const group = prompt("Enter group name:");
+            const message = prompt("Enter message:");
+            if (!group || !message) return;
+
+            try {
+                const res = await fetch(`${apiBase}/test-message`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ group, message })
+                });
+                const data = await res.json();
+                document.getElementById("response").innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById("response").innerText = `Error: ${error.message}`;
+            }
+        }
+
+        window.onload = fetchStatus;
+    </script>
+</head>
+<body>
+    <h1>WhatsApp Birthday Bot Status</h1>
+
+    <div style="border: 1px solid #ccc; padding: 10px;">
+        <h3>Service Status</h3>
+        <p>WhatsApp connection: <span id="status" style="padding: 2px 5px; background: grey; color: white;">Loading...</span></p>
+        <button onclick="fetchStatus()">Refresh Status</button>
+    </div>
+
+    <br>
+
+    <div style="border: 1px solid #ccc; padding: 10px;">
+        <h3>Manual Actions</h3>
+        <button onclick="checkBirthdays()">Check Birthdays Now</button>
+        <button onclick="sendTestMessage()">Send Test Message</button>
+    </div>
+
+    <br>
+
+    <div style="border: 1px solid #ccc; padding: 10px;">
+        <h3>Response</h3>
+        <pre id="response">Waiting for action...</pre>
+    </div>
+</body>
+</html>
+

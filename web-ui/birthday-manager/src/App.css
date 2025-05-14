@@ -1,0 +1,498 @@
+/* WhatsApp Birthday Reminder - Enhanced App.css */
+
+/* Main layout */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar - WhatsApp Style */
+.sidebar {
+  width: 280px;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  padding: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  position: fixed;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #128C7E; /* WhatsApp green */
+  background-color: #f0f2f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.logo span {
+  margin-right: 12px;
+  font-size: 1.8rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li {
+  margin: 0;
+}
+
+.sidebar ul li a {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  color: #333;
+  text-decoration: none;
+  font-size: 16px;
+  border-left: 4px solid transparent;
+  transition: all 0.2s;
+}
+
+.sidebar ul li a:hover, 
+.sidebar ul li a.active {
+  background-color: #f0f2f5;
+  border-left-color: #25D366; /* WhatsApp green */
+  color: #128C7E;
+}
+
+.sidebar ul li a span {
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  padding: 20px 20px 20px 300px; /* Add left padding to account for fixed sidebar */
+  overflow-y: auto;
+}
+
+/* Header */
+.app-header {
+  background-color: #128C7E; /* WhatsApp green */
+  color: white;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.app-header .header-links {
+  display: none; /* Hide top navigation in header */
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+}
+
+/* Dashboard */
+.dashboard {
+  padding: 0;
+}
+
+/* Birthday cards */
+.birthday-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
+.birthday-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.birthday-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.birthday-card.upcoming {
+  background-color: #25D366; /* WhatsApp green */
+  color: white;
+}
+
+.age-badge {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  width: 48px;
+  height: 48px;
+  background-color: #075E54; /* WhatsApp dark green */
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.3rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.days-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.birthday-card h3 {
+  margin-top: 8px;
+  margin-bottom: 12px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.birthday-card p {
+  margin: 8px 0;
+  font-size: 1.05rem;
+}
+
+.group-tag {
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+.birthday-card:not(.upcoming) .group-tag {
+  background-color: #f0f2f5;
+  color: #075E54;
+}
+
+.actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.edit-btn, .delete-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.edit-btn {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  text-decoration: none;
+}
+
+.delete-btn {
+  background-color: rgba(255, 0, 0, 0.2);
+  color: white;
+}
+
+.birthday-card:not(.upcoming) .edit-btn {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.birthday-card:not(.upcoming) .delete-btn {
+  background-color: #ffcdd2;
+  color: #c62828;
+}
+
+.edit-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.delete-btn:hover {
+  background-color: rgba(255, 0, 0, 0.3);
+}
+
+/* Section headers */
+h2 {
+  color: #128C7E;
+  font-size: 1.5rem;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e6e6e6;
+}
+
+/* Add Birthday button */
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  background-color: #25D366;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 30px;
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+  font-weight: 500;
+  font-size: 1.05rem;
+}
+
+.btn-add:hover {
+  background-color: #128C7E;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+}
+
+/* Forms */
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: #333;
+  font-size: 1.05rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  transition: border 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #25D366;
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.btn-primary, .btn-cancel, .btn-secondary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #25D366;
+  color: white;
+}
+
+.btn-cancel {
+  background-color: #f0f2f5;
+  color: #333;
+}
+
+.btn-secondary {
+  background-color: #34B7F1; /* WhatsApp blue */
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #128C7E;
+}
+
+.btn-cancel:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background-color: #0f9dd9;
+}
+
+/* Error and loading states */
+.error-message {
+  background-color: #ffcdd2;
+  color: #c62828;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 1.05rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 32px;
+  color: #757575;
+  font-size: 1.1rem;
+}
+
+/* WhatsApp Groups */
+.whatsapp-group-manager {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.add-group-form {
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.groups-list {
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 32px;
+}
+
+.groups-list ul {
+  padding-left: 20px;
+}
+
+.groups-list li {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.group-item {
+  padding: 18px;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.group-item:hover {
+  background-color: #f9f9f9;
+}
+
+.group-item:last-child {
+  border-bottom: none;
+}
+
+.group-info h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.group-info p {
+  margin: 8px 0 0;
+  color: #757575;
+  font-size: 1rem;
+}
+
+.test-message-section {
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* ClearStorage button */
+button.clear-storage {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: all 0.2s;
+}
+
+button.clear-storage:hover {
+  background-color: #d32f2f;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+
+  .birthday-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-container {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn-primary, .btn-cancel, .btn-secondary {
+    width: 100%;
+  }
+}

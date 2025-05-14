@@ -1,0 +1,39 @@
+
+import os
+import json
+import requests
+
+def handler(event, context):
+    urls = [
+        os.environ['PRIMARY_BACKEND_URL'],
+        os.environ['SECONDARY_BACKEND_URL'],
+        os.environ.get('TERTIARY_BACKEND_URL')
+    ]
+    headers = {"Authorization": f"Bearer {os.environ['AUTH_TOKEN']}"}
+    
+    path = event.get("rawPath", "/")
+    method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
+    body = event.get("body", "")
+    is_base64_encoded = event.get("isBase64Encoded", False)
+    if is_base64_encoded:
+        import base64
+        body = base64.b64decode(body).decode("utf-8")
+
+    for url in urls:
+        if not url:
+            continue
+        try:
+            full_url = f"{url}{path}"
+            resp = requests.request(method, full_url, data=body, headers=headers)
+            return {
+                "statusCode": resp.status_code,
+                "headers": dict(resp.headers),
+                "body": resp.text
+            }
+        except Exception as e:
+            print(f"Failed on {url}: {e}")
+
+    return {
+        "statusCode": 502,
+        "body": "All backends unreachable"
+    }

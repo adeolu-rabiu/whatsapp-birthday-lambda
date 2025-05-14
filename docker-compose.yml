@@ -1,0 +1,137 @@
+services:
+  web-ui:
+    build:
+      context: ./web-ui/birthday-manager
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./web-ui/birthday-manager/.env
+    depends_on:
+      - python-api
+    volumes:
+      - ./web-ui/birthday-manager:/app
+    stdin_open: true
+    tty: true
+    networks:
+      - birthday-network
+
+  python-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./cron.log:/app/cron.log
+      - ./service_manager_errors.log:/app/service_manager_errors.log
+      - ~/.aws:/root/.aws:ro
+    networks:
+      - birthday-network
+
+  baileys-bot:
+    build:
+      context: ./whatsapp-baileys-bot
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./whatsapp-baileys-bot:/app
+      - ./whatsapp-baileys-bot/baileys.log:/app/baileys.log
+      - ~/.aws:/root/.aws:ro
+    networks:
+      - birthday-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - birthday-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.2
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - birthday-network
+
+  filebeat:
+    build:
+      context: ./filebeat
+      dockerfile: Dockerfile
+    user: root
+    volumes:
+      # - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/logs
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - elasticsearch
+    networks:
+      - birthday-network
+
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: whatsapp-birthday-lambda-dashboard
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - birthday-network
+    env_file:
+      - ./dashboard/.env
+
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:8.12.2
+    user: root
+    volumes:
+      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - birthday-network
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    volumes:
+      - ./logs:/app/logs
+      - ./cron.log:/app/cron.log
+    environment:
+      - BAILEYS_URL=http://baileys-bot:3005
+    depends_on:
+      - baileys-bot
+    networks:
+      - birthday-network
+
+networks:
+  birthday-network:
+    driver: bridge
+
+volumes:
+  esdata:
