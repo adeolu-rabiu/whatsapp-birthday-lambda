@@ -106,3 +106,5 @@ service-manager_v4.sh
 .aws/
 .aws/credentials
 .aws/
+.aws/
+.aws/credentials
