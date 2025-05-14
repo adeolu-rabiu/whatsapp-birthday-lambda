@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="darkBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#333333;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#222222;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="greenGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00FF00;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#00AA00;stop-opacity:0" />
+    </linearGradient>
+    
+    <linearGradient id="whatsappGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#25D366;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1EA959;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="ijebuGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5AFF5A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00D000;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="metalGrey" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DDDDDD;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#AAAAAA;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="alertGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#DDDDDD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#999999;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Filters -->
+    <filter id="innershadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feOffset in="blur" dx="0" dy="0" result="offsetBlur"/>
+      <feComposite in="SourceAlpha" in2="offsetBlur" operator="out" result="innerShadow"/>
+      <feFlood flood-color="black" flood-opacity="0.7" result="color"/>
+      <feComposite in="color" in2="innerShadow" operator="in" result="shadow"/>
+      <feComposite in="shadow" in2="SourceGraphic" operator="over"/>
+    </filter>
+    
+    <filter id="drop-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur"/>
+      <feOffset in="blur" dx="5" dy="5" result="offsetBlur"/>
+      <feFlood flood-color="#00FF00" flood-opacity="0.3" result="glowColor"/>
+      <feComposite in="glowColor" in2="offsetBlur" operator="in" result="coloredShadow"/>
+      <feComposite in="SourceGraphic" in2="coloredShadow" operator="over"/>
+    </filter>
+    
+    <filter id="emboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feOffset in="blur" dx="-2" dy="-2" result="offsetBlur"/>
+      <feSpecularLighting in="offsetBlur" specularExponent="20" lighting-color="white" surfaceScale="2" result="specOut">
+        <fePointLight x="100" y="100" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/>
+      <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    
+    <filter id="textEmboss" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+      <feOffset in="blur" dx="2" dy="2" result="offsetBlur"/>
+      <feSpecularLighting in="blur" specularExponent="20" lighting-color="white" surfaceScale="1" result="specOut">
+        <fePointLight x="100" y="100" z="50"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/>
+      <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="500" fill="url(#darkBg)"/>
+  <ellipse cx="250" cy="250" rx="180" ry="180" fill="url(#greenGlow)" filter="blur(20px)" opacity="0.4"/>
+  
+  <!-- 3D Box Base -->
+  <g transform="rotate(-10, 250, 250)">
+    <!-- Base shadow -->
+    <rect x="125" y="125" width="250" height="250" rx="35" ry="35" fill="black" opacity="0.3" filter="blur(8px)" transform="translate(15, 15)"/>
+    
+    <!-- Green striped bottom -->
+    <g transform="translate(125, 295)">
+      <rect width="250" height="80" rx="0" ry="0" fill="#1EB000"/>
+      <g fill="#222222">
+        <rect x="10" y="0" width="8" height="80" transform="rotate(30, 10, 0)"/>
+        <rect x="30" y="0" width="8" height="80" transform="rotate(30, 30, 0)"/>
+        <rect x="50" y="0" width="8" height="80" transform="rotate(30, 50, 0)"/>
+        <rect x="70" y="0" width="8" height="80" transform="rotate(30, 70, 0)"/>
+        <rect x="90" y="0" width="8" height="80" transform="rotate(30, 90, 0)"/>
+        <rect x="110" y="0" width="8" height="80" transform="rotate(30, 110, 0)"/>
+        <rect x="130" y="0" width="8" height="80" transform="rotate(30, 130, 0)"/>
+        <rect x="150" y="0" width="8" height="80" transform="rotate(30, 150, 0)"/>
+        <rect x="170" y="0" width="8" height="80" transform="rotate(30, 170, 0)"/>
+        <rect x="190" y="0" width="8" height="80" transform="rotate(30, 190, 0)"/>
+        <rect x="210" y="0" width="8" height="80" transform="rotate(30, 210, 0)"/>
+        <rect x="230" y="0" width="8" height="80" transform="rotate(30, 230, 0)"/>
+        <rect x="250" y="0" width="8" height="80" transform="rotate(30, 250, 0)"/>
+      </g>
+    </g>
+    
+    <!-- Main box -->
+    <rect x="125" y="125" width="250" height="250" rx="35" ry="35" fill="#333333" filter="url(#innershadow)"/>
+    <rect x="135" y="135" width="230" height="230" rx="25" ry="25" fill="#222222"/>
+    
+    <!-- Metallic border -->
+    <rect x="125" y="125" width="250" height="250" rx="35" ry="35" fill="none" stroke="url(#metalGrey)" stroke-width="5" filter="url(#emboss)"/>
+    
+    <!-- WhatsApp Logo -->
+    <g transform="translate(150, 155)">
+      <circle cx="0" cy="0" r="30" fill="#222222" stroke="black" stroke-width="3" filter="drop-shadow(1px 1px 2px rgba(0,0,0,0.7))"/>
+      <circle cx="0" cy="0" r="24" fill="url(#whatsappGreen)"/>
+      <circle cx="0" cy="0" r="22" fill="url(#whatsappGreen)" stroke="white" stroke-width="2"/>
+      <path d="M-12,-2 C-12,-9 -7,-14 0,-14 C7,-14 12,-9 12,-2 L12,5 C12,5 5,11 0,11 C-5,11 -12,5 -12,5 Z" fill="white" filter="url(#emboss)"/>
+      <path d="M0,11 L0,17" stroke="white" stroke-width="3" stroke-linecap="round" filter="url(#emboss)"/>
+    </g>
+    
+    <!-- Plant icon at top of box -->
+    <g transform="translate(250, 160)">
+      <path d="M0,0 L10,15 L20,0" stroke="url(#ijebuGreen)" stroke-width="4" fill="none" stroke-linejoin="round"/>
+      <path d="M-15,0 L-5,15 L5,0" stroke="url(#ijebuGreen)" stroke-width="4" fill="none" stroke-linejoin="round"/>
+      <path d="M15,0 L25,15 L35,0" stroke="url(#ijebuGreen)" stroke-width="4" fill="none" stroke-linejoin="round"/>
+    </g>
+    
+    <!-- Text: "iJEBU" -->
+    <g transform="translate(170, 230)" filter="url(#drop-shadow)">
+      <text font-family="Arial Black, Arial, sans-serif" font-size="60" font-weight="900" fill="url(#ijebuGreen)" filter="url(#textEmboss)">iJEBU</text>
+    </g>
+    
+    <!-- Text: "BIRTHDAY" -->
+    <g transform="translate(155, 280)" filter="url(#drop-shadow)">
+      <text font-family="Impact, Arial, sans-serif" font-size="42" font-weight="bold" fill="white" filter="url(#textEmboss)">BIRTHDAY</text>
+    </g>
+    
+    <!-- Text: "ALERT" -->
+    <g transform="translate(185, 330)" filter="url(#drop-shadow)">
+      <text font-family="Impact, Arial, sans-serif" font-size="48" font-weight="bold" fill="url(#alertGradient)" filter="url(#textEmboss)">ALERT</text>
+    </g>
+    
+    <!-- Text: "WhatsApp" -->
+    <g transform="translate(285, 370)">
+      <text font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">WhatsApp</text>
+    </g>
+  </g>
+</svg>

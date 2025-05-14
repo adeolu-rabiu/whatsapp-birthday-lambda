@@ -1,0 +1,28 @@
+metricbeat.modules:
+- module: system
+  metricsets:
+    - cpu
+    - load
+    - memory
+    - network
+    - process
+  enabled: true
+  period: 10s
+  processes: ['.*']
+
+- module: docker
+  metricsets:
+    - container
+    - cpu
+    - diskio
+    - memory
+    - network
+  enabled: true
+  period: 10s
+  hosts: ["unix:///var/run/docker.sock"]
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+
+setup.kibana:
+  host: "kibana:5601"

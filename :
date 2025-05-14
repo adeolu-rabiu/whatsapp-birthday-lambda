@@ -1,0 +1,872 @@
+#!/bin/bash
+
+# WhatsApp Birthday Bot Service Manager
+# Version 4.0 - Updated for Docker Compose with Lambda API integration
+
+# Set error handling
+set -e
+
+# Colors for better readability
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Get the absolute path of the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Default Docker Compose project name
+COMPOSE_PROJECT_NAME="whatsapp-birthday-lambda"
+
+# Log to file function for error tracking
+function log_to_file() {
+  local log_level="$1"
+  local message="$2"
+  local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [$log_level] $message" >> "$PROJECT_ROOT/service_manager_errors.log"
+}
+
+# URLs
+API_URL=""
+REACT_APP_API_URL=""
+LOCAL_UI_URL=""
+BAILEYS_SERVER_PORT=3005
+REACT_APP_PORT=3000
+PYTHON_API_PORT=5000
+
+function log_success() {
+  echo -e "${GREEN}✅ $1${NC}"
+}
+
+function log_warning() {
+  echo -e "${YELLOW}⚠️ $1${NC}"
+}
+
+function log_error() {
+  echo -e "${RED}❌ $1${NC}"
+}
+
+function log_info() {
+  echo -e "${BLUE}📌 $1${NC}"
+}
+
+function log_highlight() {
+  echo -e "${PURPLE}🔍 $1${NC}"
+}
+
+function log_cmd() {
+  echo -e "${CYAN}🖥️ $1${NC}"
+}
+
+function ensure_log_files() {
+  # Ensure log directories exists
+  mkdir -p "$PROJECT_ROOT/logs"
+  
+  # Create log files if they don't exist
+  touch "$PROJECT_ROOT/logs/service_manager.log"
+  
+  log_success "Log files are ready"
+}
+
+function ensure_env_file() {
+  if [ ! -f "$PROJECT_ROOT/web-ui/birthday-manager/.env" ]; then
+    log_warning "React .env file not found! Creating one with default values."
+    cat <<EOT > "$PROJECT_ROOT/web-ui/birthday-manager/.env"
+REACT_APP_API_URL=https://5b9qzf6vs0.execute-api.eu-west-2.amazonaws.com
+REACT_APP_AUTH_TOKEN=2e58df99b9011ea1257bef6c0026bc3b9a2daa3543ff6b8f241c129f09646a7a
+EOT
+    log_success "React .env file created. Please review and update it as needed."
+  fi
+  
+  # Export environment variables
+  if [ -f "$PROJECT_ROOT/web-ui/birthday-manager/.env" ]; then
+    set -o allexport
+    source "$PROJECT_ROOT/web-ui/birthday-manager/.env"
+    set +o allexport
+    log_info "Loaded environment variables from .env"
+  fi
+  
+  # Ensure API_URL is set
+  if [ -n "$REACT_APP_API_URL" ]; then
+    API_URL="$REACT_APP_API_URL"
+    log_info "API URL set to: $API_URL"
+    log_to_file "INFO" "API URL loaded from .env: $API_URL"
+  else
+    API_URL="https://5b9qzf6vs0.execute-api.eu-west-2.amazonaws.com"
+    log_warning "API URL not found in .env, using default: $API_URL"
+    log_to_file "WARNING" "Using default API URL: $API_URL"
+  fi
+  
+  # Make sure AUTH_TOKEN is loaded
+  if [ -z "$REACT_APP_AUTH_TOKEN" ]; then
+    REACT_APP_AUTH_TOKEN="2e58df99b9011ea1257bef6c0026bc3b9a2daa3543ff6b8f241c129f09646a7a"
+    log_warning "AUTH_TOKEN not found in .env, using default"
+    log_to_file "WARNING" "Using default AUTH_TOKEN"
+  else
+    log_info "Authorization token loaded from .env"
+    log_to_file "INFO" "AUTH_TOKEN loaded from .env"
+  fi
+  
+  LOCAL_UI_URL="http://localhost:$REACT_APP_PORT"
+}
+
+function check_docker() {
+  if ! command -v docker &> /dev/null; then
+    log_error "Docker is not installed. Please install Docker first."
+    exit 1
+  fi
+  
+  if ! command -v docker-compose &> /dev/null; then
+    log_error "Docker Compose is not installed. Please install Docker Compose first."
+    exit 1
+  fi
+  
+  log_success "Docker and Docker Compose are installed."
+  
+  # Check if Docker daemon is running
+  if ! docker info &>/dev/null; then
+    log_error "Docker daemon is not running. Please start Docker first."
+    exit 1
+  fi
+  
+  log_success "Docker daemon is running."
+}
+
+function check_services() {
+  log_info "Checking Docker services status..."
+  
+  # Get a list of all expected services
+  EXPECTED_SERVICES=("web-ui" "python-api" "elasticsearch" "kibana" "filebeat" "baileys-bot" "dashboard" "cron")
+  
+  for service in "${EXPECTED_SERVICES[@]}"; do
+    if docker ps --format '{{.Names}}' | grep -q "${COMPOSE_PROJECT_NAME}_${service}"; then
+      log_success "${service} is running"
+    else
+      log_warning "${service} is not running"
+    fi
+  done
+}
+
+function docker_compose_up() {
+  log_info "Starting all Docker containers..."
+  
+  cd "$PROJECT_ROOT"
+  
+  # Check if docker-compose.yml exists
+  if [ ! -f "$PROJECT_ROOT/docker-compose.yml" ]; then
+    log_error "docker-compose.yml not found in $PROJECT_ROOT"
+    return 1
+  fi
+  
+  # Start all services with Docker Compose
+  docker-compose up -d
+  
+  if [ $? -eq 0 ]; then
+    log_success "All Docker containers started successfully"
+    sleep 5  # Give containers time to initialize
+    check_services
+  else
+    log_error "Failed to start Docker containers"
+    return 1
+  fi
+  
+  # Provide URL for UI access
+  log_info "Web UI available at: http://localhost:$REACT_APP_PORT"
+  log_info "Python API available at: http://localhost:$PYTHON_API_PORT"
+  log_info "WhatsApp Baileys API available at: http://localhost:$BAILEYS_SERVER_PORT"
+}
+
+function docker_compose_down() {
+  log_info "Stopping all Docker containers..."
+  
+  cd "$PROJECT_ROOT"
+  
+  # Stop all services with Docker Compose
+  docker-compose down
+  
+  if [ $? -eq 0 ]; then
+    log_success "All Docker containers stopped successfully"
+  else
+    log_error "Failed to stop Docker containers"
+    return 1
+  fi
+}
+
+function docker_compose_restart() {
+  log_info "Restarting all Docker containers..."
+  
+  cd "$PROJECT_ROOT"
+  
+  # Restart all services with Docker Compose
+  docker-compose restart
+  
+  if [ $? -eq 0 ]; then
+    log_success "All Docker containers restarted successfully"
+    sleep 5  # Give containers time to initialize
+    check_services
+  else
+    log_error "Failed to restart Docker containers"
+    return 1
+  fi
+}
+
+function restart_single_service() {
+  log_info "Restarting a specific Docker service..."
+  
+  # List available services
+  echo "Available services:"
+  docker-compose ps --services | nl
+  
+  read -p "Enter the number of the service to restart: " service_num
+  
+  # Get the service name
+  service_name=$(docker-compose ps --services | sed "${service_num}q;d")
+  
+  if [ -z "$service_name" ]; then
+    log_error "Invalid service number"
+    return 1
+  fi
+  
+  log_info "Restarting $service_name..."
+  docker-compose restart "$service_name"
+  
+  if [ $? -eq 0 ]; then
+    log_success "$service_name restarted successfully"
+  else
+    log_error "Failed to restart $service_name"
+    return 1
+  fi
+}
+
+function open_web_ui() {
+  log_info "Opening Web UI in browser..."
+  
+  if [ -n "$BROWSER" ]; then
+    $BROWSER "http://localhost:3000" &
+  elif command -v xdg-open &> /dev/null; then
+    xdg-open "http://localhost:3000" &
+  elif command -v open &> /dev/null; then
+    open "http://localhost:3000" &
+  elif command -v start &> /dev/null; then
+    start "http://localhost:3000" &
+  else
+    log_warning "Could not automatically open browser. Please visit http://localhost:3000 manually."
+  fi
+}
+
+function view_docker_logs() {
+  log_info "Viewing Docker logs..."
+  
+  # List available services
+  echo "Available services:"
+  docker-compose ps --services | nl
+  
+  read -p "Enter the number of the service to view logs (0 for all): " service_num
+  
+  if [ "$service_num" = "0" ]; then
+    log_info "Viewing logs for all services (press Ctrl+C to exit)..."
+    docker-compose logs -f
+  else
+    # Get the service name
+    service_name=$(docker-compose ps --services | sed "${service_num}q;d")
+    
+    if [ -z "$service_name" ]; then
+      log_error "Invalid service number"
+      return 1
+    fi
+    
+    log_info "Viewing logs for $service_name (press Ctrl+C to exit)..."
+    docker-compose logs -f "$service_name"
+  fi
+}
+
+function display_birthdays() {
+  log_info "Fetching birthdays from API..."
+  
+  # Try using API endpoint with proper authentication
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -H "Authorization: Bearer $AUTH_TOKEN" "$API_URL/birthdays")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to fetch birthdays from API."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  # Display birthdays nicely if jq is available
+  echo -e "${BLUE}📋 Current Birthdays:${NC}"
+  
+  if command -v jq &> /dev/null; then
+    echo "$RESPONSE" | jq -r '.[] | "👤 Name: \(.name)\n🎂 Birth Date: \(.birth_date)\n🗓️ Month-Day: \(.birth_month_day)\n🔖 ID: \(.birthday_id)\n📱 Group ID: \(.group_id)\n---"'
+  else
+    echo "$RESPONSE"
+  fi
+}
+
+function display_groups() {
+  log_info "Fetching WhatsApp groups from API..."
+  
+  # Try using API endpoint with proper authentication
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -H "Authorization: Bearer $AUTH_TOKEN" "$API_URL/groups")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to fetch groups from API."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  # Display groups nicely if jq is available
+  echo -e "${BLUE}📋 WhatsApp Groups:${NC}"
+  
+  if command -v jq &> /dev/null; then
+    echo "$RESPONSE" | jq -r '.[] | "📱 Name: \(.name)\n🔖 ID: \(.group_id)\n📝 Description: \(.description // "No description")\n---"'
+  else
+    echo "$RESPONSE"
+  fi
+}
+
+function test_send_message() {
+  log_info "Testing message sending..."
+  
+  # First get available groups
+  display_groups
+  
+  # Get input from user
+  read -p "Enter the group ID to send to: " group_id
+  read -p "Enter the message to send: " message
+  
+  if [ -z "$group_id" ] || [ -z "$message" ]; then
+    log_error "Group ID and message are required"
+    return 1
+  fi
+  
+  # Try to send message using API
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -X POST \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -d "{\"group_id\":\"$group_id\",\"message\":\"$message\"}" \
+    "$API_URL/test-message")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to send message."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  log_success "Message sent successfully!"
+  echo "$RESPONSE"
+}
+
+function add_birthday() {
+  log_info "Adding a new birthday..."
+  
+  # Get input from user
+  read -p "Enter person's name: " name
+  read -p "Enter birth date (YYYY-MM-DD): " birth_date
+  
+  # Display available groups for selection
+  display_groups
+  read -p "Enter the group ID: " group_id
+  
+  if [ -z "$name" ] || [ -z "$birth_date" ] || [ -z "$group_id" ]; then
+    log_error "Name, birth date, and group ID are required"
+    return 1
+  fi
+  
+  # Extract month and day for birth_month_day
+  month_day=$(echo "$birth_date" | cut -d'-' -f2,3)
+  
+  # Try to add birthday using API
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -X POST \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -d "{\"name\":\"$name\",\"birth_date\":\"$birth_date\",\"birth_month_day\":\"$month_day\",\"group_id\":\"$group_id\"}" \
+    "$API_URL/birthdays")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to add birthday."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  log_success "Birthday added successfully!"
+  echo "$RESPONSE"
+}
+
+function delete_birthday() {
+  log_info "Deleting a birthday..."
+  
+  # Display current birthdays
+  display_birthdays
+  
+  # Get input from user
+  read -p "Enter the birthday ID to delete: " birthday_id
+  
+  if [ -z "$birthday_id" ]; then
+    log_error "Birthday ID is required"
+    return 1
+  fi
+  
+  # Try to delete birthday using API
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -X DELETE \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    "$API_URL/birthdays/$birthday_id")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to delete birthday."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  log_success "Birthday deleted successfully!"
+  echo "$RESPONSE"
+}
+
+function add_group() {
+  log_info "Adding a new WhatsApp group..."
+  
+  # Get input from user
+  read -p "Enter group name: " name
+  read -p "Enter group description (optional): " description
+  
+  if [ -z "$name" ]; then
+    log_error "Group name is required"
+    return 1
+  fi
+  
+  # Prepare JSON payload
+  JSON_PAYLOAD="{\"name\":\"$name\""
+  
+  if [ -n "$description" ]; then
+    JSON_PAYLOAD="$JSON_PAYLOAD,\"description\":\"$description\""
+  fi
+  
+  JSON_PAYLOAD="$JSON_PAYLOAD}"
+  
+  # Try to add group using API
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -X POST \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -d "$JSON_PAYLOAD" \
+    "$API_URL/groups")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to add group."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  log_success "WhatsApp group added successfully!"
+  echo "$RESPONSE"
+}
+
+function delete_group() {
+  log_info "Deleting a WhatsApp group..."
+  
+  # Display current groups
+  display_groups
+  
+  # Get input from user
+  read -p "Enter the group ID to delete: " group_id
+  
+  if [ -z "$group_id" ]; then
+    log_error "Group ID is required"
+    return 1
+  fi
+  
+  # Try to delete group using API
+  AUTH_TOKEN="$REACT_APP_AUTH_TOKEN"
+  RESPONSE=$(curl -s -X DELETE \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    "$API_URL/groups/$group_id")
+  
+  if [ $? -ne 0 ] || [[ "$RESPONSE" == *"error"* ]]; then
+    log_error "Failed to delete group."
+    log_error "Response: $RESPONSE"
+    return 1
+  fi
+  
+  log_success "WhatsApp group deleted successfully!"
+  echo "$RESPONSE"
+}
+
+function fix_react_bug() {
+  log_info "Fixing React birthday form bug..."
+  
+  # Path to the BirthdayForm.js file
+  FORM_PATH="$PROJECT_ROOT/web-ui/birthday-manager/src/components/BirthdayForm.js"
+  
+  if [ ! -f "$FORM_PATH" ]; then
+    log_error "BirthdayForm.js not found at $FORM_PATH"
+    return 1
+  fi
+  
+  # Check if the bug is present (using groupId instead of group_id in addBirthday)
+  if grep -q "groupId" "$FORM_PATH"; then
+    log_info "Found potential bug in BirthdayForm.js, applying fix..."
+    
+    # Create a backup first
+    cp "$FORM_PATH" "${FORM_PATH}.bak"
+    
+    # Replace the bug with the fix
+    sed -i 's/groupId/group_id: groupId/g' "$FORM_PATH"
+    
+    log_success "Fix applied to BirthdayForm.js"
+    log_info "Restarting web-ui container to apply changes..."
+    
+    docker-compose restart web-ui
+    
+    if [ $? -eq 0 ]; then
+      log_success "web-ui container restarted successfully"
+    else
+      log_error "Failed to restart web-ui container"
+    fi
+  else
+    log_info "No bug found in BirthdayForm.js or fix already applied"
+  fi
+}
+
+function install_browser_in_container() {
+  log_info "Installing a browser in web-ui container for direct testing..."
+  
+  docker-compose exec web-ui bash -c "apt-get update && apt-get install -y firefox-esr xvfb"
+  
+  if [ $? -eq 0 ]; then
+    log_success "Firefox ESR and Xvfb installed successfully in web-ui container"
+    log_info "You can now run Firefox in the container with: docker-compose exec web-ui firefox-esr"
+  else
+    log_error "Failed to install browser in container"
+  fi
+}
+
+function create_vnc_access() {
+  log_info "Setting up VNC access for GUI applications in container..."
+  
+  # Check if VNC is already installed
+  if docker-compose exec web-ui which vncserver &>/dev/null; then
+    log_info "VNC server already installed"
+  else
+    log_info "Installing VNC server in web-ui container..."
+    docker-compose exec web-ui bash -c "apt-get update && apt-get install -y tightvncserver xfce4 xfce4-goodies"
+    
+    if [ $? -ne 0 ]; then
+      log_error "Failed to install VNC server in container"
+      return 1
+    fi
+  fi
+  
+  # Setup VNC server
+  log_info "Setting up VNC server in web-ui container..."
+  docker-compose exec web-ui bash -c "mkdir -p ~/.vnc && echo 'password' | vncpasswd -f > ~/.vnc/passwd && chmod 600 ~/.vnc/passwd"
+  
+  # Create startup file
+  docker-compose exec web-ui bash -c "echo '#!/bin/bash\nxrdb \$HOME/.Xresources\nstartxfce4 &' > ~/.vnc/xstartup && chmod +x ~/.vnc/xstartup"
+  
+  # Start VNC server
+  docker-compose exec -d web-ui bash -c "vncserver -geometry 1280x800 :1"
+  
+  log_success "VNC server started in web-ui container"
+  log_info "You can now connect to VNC at localhost:5901 with password 'password'"
+  log_info "You may need to expose port 5901 in your docker-compose.yml file for external access"
+}
+
+function configure_port_forwarding() {
+  log_info "Setting up SSH port forwarding for remote access..."
+  
+  # Get the local IP address
+  LOCAL_IP=$(hostname -I | awk '{print $1}')
+  
+  log_info "Your server IP address is: $LOCAL_IP"
+  log_info "To access the UI remotely, use the following SSH command on your local machine:"
+  echo -e "${CYAN}ssh -L 8080:localhost:3000 user@${LOCAL_IP}${NC}"
+  echo -e "Then access the UI at ${CYAN}http://localhost:8080${NC} on your local machine"
+  
+  # Offer to create a simple script for port forwarding
+  read -p "Create a port forwarding setup script? (y/n): " create_script
+  
+  if [[ "$create_script" =~ ^[Yy]$ ]]; then
+    cat > "$PROJECT_ROOT/port_forward_setup.sh" << EOF
+#!/bin/bash
+echo "Setting up port forwarding for WhatsApp Birthday Bot UI"
+echo "Running this on your local machine will allow you to access the UI"
+echo "Usage: ./port_forward_setup.sh [username] [custom_local_port]"
+
+USERNAME=\${1:-"user"}
+LOCAL_PORT=\${2:-"8080"}
+
+echo "SSH command: ssh -L \${LOCAL_PORT}:localhost:3000 \${USERNAME}@${LOCAL_IP}"
+echo "After connecting, access the UI at: http://localhost:\${LOCAL_PORT}"
+
+read -p "Connect now? (y/n): " connect_now
+if [[ "\$connect_now" =~ ^[Yy]$ ]]; then
+  ssh -L \${LOCAL_PORT}:localhost:3000 \${USERNAME}@${LOCAL_IP}
+fi
+EOF
+    chmod +x "$PROJECT_ROOT/port_forward_setup.sh"
+    log_success "Port forwarding setup script created: $PROJECT_ROOT/port_forward_setup.sh"
+  fi
+}
+
+function system_health_check() {
+  clear
+  echo -e "${BLUE}🩺 System Health Check${NC}"
+  
+  # Check Docker status
+  echo -e "${PURPLE}=== Docker Status ===${NC}"
+  docker info | grep "Containers\|Running\|Paused\|Stopped\|Images"
+  
+  # Check Docker containers
+  echo -e "\n${PURPLE}=== Container Status ===${NC}"
+  docker-compose ps
+  
+  # Check disk space
+  echo -e "\n${PURPLE}=== Disk Space ===${NC}"
+  if command -v df &> /dev/null; then
+    df -h . | awk 'NR==1 || NR==2 {print}'
+  else
+    log_warning "Disk space check not available"
+  fi
+  
+  # Check Docker disk usage
+  echo -e "\n${PURPLE}=== Docker Disk Usage ===${NC}"
+  docker system df
+  
+  # Check API connectivity
+  echo -e "\n${PURPLE}=== API Connectivity ===${NC}"
+  curl -s -o /dev/null -w "API Status: %{http_code}\n" -H "Authorization: Bearer ${REACT_APP_AUTH_TOKEN}" "${API_URL}/birthdays"
+  
+  # Check local services connectivity
+  echo -e "\n${PURPLE}=== Local Services Connectivity ===${NC}"
+  curl -s -o /dev/null -w "Web UI Status: %{http_code}\n" "http://localhost:3000"
+  curl -s -o /dev/null -w "Python API Status: %{http_code}\n" "http://localhost:5000/birthdays"
+  curl -s -o /dev/null -w "Baileys Status: %{http_code}\n" "http://localhost:3005/health"
+  
+  read -p "Press Enter to continue..." dummy
+}
+
+function manage_groups_menu() {
+  clear
+  echo -e "${BLUE}📱 WhatsApp Group Management${NC}"
+  echo "1) Display All Groups"
+  echo "2) Add New Group"
+  echo "3) Delete Group"
+  echo "4) Send Test Message"
+  echo "5) Back to Main Menu"
+  
+  read -p "Choose an option [1-5]: " choice
+  
+  case $choice in
+    1)
+      display_groups
+      ;;
+    2)
+      add_group
+      ;;
+    3)
+      delete_group
+      ;;
+    4)
+      test_send_message
+      ;;
+    5)
+      return
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 5."
+      ;;
+  esac
+  
+  read -p "Press Enter to continue..." dummy
+  manage_groups_menu
+}
+
+function manage_birthdays_menu() {
+  clear
+  echo -e "${BLUE}🎂 Birthday Management${NC}"
+  echo "1) Display All Birthdays"
+  echo "2) Add New Birthday"
+  echo "3) Delete Birthday"
+  echo "4) Open Web UI to Manage Birthdays"
+  echo "5) Back to Main Menu"
+  
+  read -p "Choose an option [1-5]: " choice
+  
+  case $choice in
+    1)
+      display_birthdays
+      ;;
+    2)
+      add_birthday
+      ;;
+    3)
+      delete_birthday
+      ;;
+    4)
+      open_web_ui
+      ;;
+    5)
+      return
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 5."
+      ;;
+  esac
+  
+  read -p "Press Enter to continue..." dummy
+  manage_birthdays_menu
+}
+
+function troubleshooting_menu() {
+  clear
+  echo -e "${BLUE}🔧 Troubleshooting & Advanced Options${NC}"
+  echo "1) System Health Check"
+  echo "2) View Docker Logs"
+  echo "3) Fix React Birthday Form Bug"
+  echo "4) Install Browser in Container"
+  echo "5) Setup VNC for GUI Access"
+  echo "6) Configure SSH Port Forwarding"
+  echo "7) Restart Single Service"
+  echo "8) Back to Main Menu"
+  
+  read -p "Choose an option [1-8]: " choice
+  
+  case $choice in
+    1)
+      system_health_check
+      ;;
+    2)
+      view_docker_logs
+      ;;
+    3)
+      fix_react_bug
+      ;;
+    4)
+      install_browser_in_container
+      ;;
+    5)
+      create_vnc_access
+      ;;
+    6)
+      configure_port_forwarding
+      ;;
+    7)
+      restart_single_service
+      ;;
+    8)
+      return
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 8."
+      ;;
+  esac
+  
+  read -p "Press Enter to continue..." dummy
+  troubleshooting_menu
+}
+
+function show_help() {
+  clear
+  echo -e "${BLUE}📋 WhatsApp Birthday Bot - Help Guide${NC}"
+  echo ""
+  echo "This service manager helps you control the Docker-based components of your system:"
+  echo ""
+  echo "1. Web UI - React frontend for managing birthdays and groups (Port 3000)"
+  echo "2. Python API - Backend API for the birthday system (Port 5000)"
+  echo "3. Baileys Bot - Node.js service for sending WhatsApp messages (Port 3005)"
+  echo "4. ElasticSearch - Database for logs and analytics (Port 9200)"
+  echo "5. Kibana - Dashboard for log visualization (Port 5601)"
+  echo "6. Cron - Scheduled jobs for birthday notifications"
+  echo ""
+  echo "Main Features:"
+  echo "- Start/Stop/Restart Docker containers"
+  echo "- Manage WhatsApp Groups - Create, list, and delete WhatsApp groups"
+  echo "- Manage Birthdays - Add, view, and delete birthday reminders"
+  echo "- Troubleshooting - View logs, check health, fix common issues"
+  echo "- Remote Access - Set up VNC for GUI access or SSH port forwarding"
+  echo ""
+  echo "Troubleshooting Tips:"
+  echo "- If you have issues with the React UI, check the web-ui container logs"
+  echo "- For API connectivity issues, verify that your API URL and token are correct"
+  echo "- If you can't add birthdays, try using the 'Fix React Birthday Form Bug' option"
+  echo "- For remote access issues, set up SSH port forwarding or VNC access"
+  echo "- Always check the system health before troubleshooting specific issues"
+  echo ""
+  read -p "Press Enter to continue..." dummy
+}
+
+# Initialize environment
+ensure_log_files
+ensure_env_file
+check_docker
+
+# Main menu
+while true; do
+  clear
+  echo ""
+  echo -e "${BLUE}📦 WhatsApp Birthday Bot Service Manager${NC} v4.0"
+  echo -e "${CYAN}Docker-based Deployment with Lambda API Integration${NC}"
+  echo "1) Start All Services"
+  echo "2) Stop All Services"
+  echo "3) Restart All Services"
+  echo "4) Check Service Status"
+  echo "5) View Docker Logs"
+  echo "6) Manage WhatsApp Groups"
+  echo "7) Manage Birthdays"
+  echo "8) Troubleshooting & Advanced Options"
+  echo "9) Open Web UI"
+  echo "10) Help & Information"
+  echo "11) Exit"
+  
+  read -p "Choose an option [1-11]: " choice
+
+  case $choice in
+    1)
+      docker_compose_up
+      ;;
+    2)
+      docker_compose_down
+      ;;
+    3)
+      docker_compose_restart
+      ;;
+    4)
+      check_services
+      ;;
+    5)
+      view_docker_logs
+      ;;
+    6)
+      manage_groups_menu
+      ;;
+    7)
+      manage_birthdays_menu
+      ;;
+    8)
+      troubleshooting_menu
+      ;;
+    9)
+      open_web_ui
+      ;;
+    10)
+      show_help
+      ;;
+    11)
+      echo -e "${GREEN}Exiting. Bye 👋${NC}"
+      exit 0
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 11."
+      ;;
+  esac
+  
+  echo ""
+  read -p "Press Enter to continue..." dummy
+done

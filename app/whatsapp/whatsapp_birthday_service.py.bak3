@@ -1,0 +1,208 @@
+import os
+import logging
+import requests
+import datetime
+import random
+import json
+import boto3
+from pathlib import Path
+
+# === Logging Setup ===
+LOG_DIR = "/opt/whatsapp-birthday-lambda/logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOG_FILE_PATH = os.path.join(LOG_DIR, "whatsapp_birthday_service.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE_PATH),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger('whatsapp_birthday_service')
+
+# === Config ===
+BAILEYS_API_URL = "http://localhost:3005/send"
+FACT_LOG_PATH = Path("/opt/whatsapp-birthday-lambda/app/whatsapp/.used_fun_facts.log")
+FACT_SOURCE_PATH = Path("/opt/whatsapp-birthday-lambda/app/whatsapp/fun_facts_no_blank_lines.txt")
+
+def load_fun_fact():
+    with open(FACT_SOURCE_PATH, "r", encoding="utf-8") as f:
+        all_facts = [line.strip().strip('"') for line in f if line.strip()]
+
+    used_facts = {}
+    if FACT_LOG_PATH.exists():
+        with open(FACT_LOG_PATH, "r", encoding="utf-8") as log:
+            for line in log:
+                date_str, fact = line.strip().split("||", 1)
+                used_facts[fact] = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+
+    six_months_ago = datetime.datetime.now() - datetime.timedelta(days=180)
+    fresh_facts = [f for f in all_facts if used_facts.get(f, datetime.datetime.min) < six_months_ago]
+    if not fresh_facts:
+        fresh_facts = all_facts
+
+    selected = random.choice(fresh_facts)
+
+    with open(FACT_LOG_PATH, "a", encoding="utf-8") as log:
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        log.write(f"{today}||{selected}\n")
+
+    return selected
+
+def get_today_birthdays():
+    today = datetime.datetime.now().strftime("%m-%d")
+    logger.info(f"📅 Checking for birthdays on: {today}")
+    
+    try:
+        # Connect directly to DynamoDB
+        dynamodb = boto3.resource('dynamodb', region_name='eu-west-2')
+        birthdays_table = dynamodb.Table('Birthdays')
+        groups_table = dynamodb.Table('WhatsAppGroups')
+        
+        # Get all birthdays
+        birthdays_response = birthdays_table.scan()
+        birthdays = birthdays_response.get('Items', [])
+        
+        # Handle pagination if there are more results
+        while 'LastEvaluatedKey' in birthdays_response:
+            birthdays_response = birthdays_table.scan(ExclusiveStartKey=birthdays_response['LastEvaluatedKey'])
+            birthdays.extend(birthdays_response.get('Items', []))
+        
+        todays_birthdays = [b for b in birthdays if b.get("birth_month_day") == today]
+        
+        # Get all groups
+        groups_response = groups_table.scan()
+        groups = groups_response.get('Items', [])
+        
+        # Handle pagination if there are more results
+        while 'LastEvaluatedKey' in groups_response:
+            groups_response = groups_table.scan(ExclusiveStartKey=groups_response['LastEvaluatedKey'])
+            groups.extend(groups_response.get('Items', []))
+        
+        logger.info(f"Found {len(groups)} WhatsApp groups: {', '.join([g.get('name', 'Unknown') for g in groups])}")
+        group_map = {g['group_id']: g['name'] for g in groups}
+        
+        return todays_birthdays, group_map
+    
+    except Exception as e:
+        logger.error(f"❌ Error fetching data from DynamoDB: {e}")
+        return [], {}
+
+def send_message(group, message):
+    logger.info(f"Attempting to send message to group: '{group}'")
+    try:
+        # Clean the group name if it contains underscores or other problematic characters
+        clean_group = group.replace('_', ' ')
+        
+        # Try the original group name first
+        payload = {"group": group, "message": message}
+        logger.info(f"Sending to original group name: '{group}'")
+        
+        try:
+            res = requests.post(BAILEYS_API_URL, json=payload, timeout=10)
+            res.raise_for_status()
+            logger.info(f"✅ Sent message to '{group}': {message}")
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to send with original name '{group}': {e}")
+            
+            # If original fails and the name was cleaned, try the clean version
+            if clean_group != group:
+                try:
+                    logger.info(f"Trying with clean group name: '{clean_group}'")
+                    payload = {"group": clean_group, "message": message}
+                    res = requests.post(BAILEYS_API_URL, json=payload, timeout=10)
+                    res.raise_for_status()
+                    logger.info(f"✅ Sent message to '{group}' (using clean name '{clean_group}'): {message}")
+                    return True
+                except Exception as e2:
+                    logger.error(f"❌ Failed to send with clean name '{clean_group}': {e2}")
+            
+            # If we still haven't succeeded, check the WhatsApp connection
+            try:
+                status_url = "http://localhost:3005/status"
+                status_res = requests.get(status_url, timeout=5)
+                logger.info(f"WhatsApp bot status: {status_res.status_code} - {status_res.text}")
+            except Exception as e3:
+                logger.error(f"❌ Failed to check WhatsApp bot status: {e3}")
+                
+            return False
+    except Exception as e:
+        logger.error(f"❌ Failed to send to '{group}': {e}")
+        return False
+
+def list_available_whatsapp_groups():
+    try:
+        status_url = "http://localhost:3005/groups"
+        res = requests.get(status_url, timeout=5)
+        if res.status_code == 200:
+            groups = res.json()
+            logger.info(f"Available WhatsApp groups from bot: {json.dumps(groups)}")
+            return groups
+        else:
+            logger.error(f"Failed to get groups: {res.status_code} - {res.text}")
+            return []
+    except Exception as e:
+        logger.error(f"❌ Failed to list WhatsApp groups: {e}")
+        return []
+
+def main():
+    logger.info("🚀 Starting WhatsApp Birthday Service")
+    
+    # Check the WhatsApp connection first
+    try:
+        status_url = "http://localhost:3005/status"
+        status_res = requests.get(status_url, timeout=5)
+        logger.info(f"WhatsApp bot status: {status_res.status_code} - {status_res.text}")
+        
+        # List available groups
+        available_groups = list_available_whatsapp_groups()
+        logger.info(f"Found {len(available_groups)} groups directly from WhatsApp")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to check WhatsApp bot status: {e}")
+    
+    birthdays, group_map = get_today_birthdays()
+
+    groups_with_birthdays = set()
+
+    if birthdays:
+        for b in birthdays:
+            name = b.get("name")
+            group_id = b.get("group_id")
+            group = group_map.get(group_id)
+            if group:
+                message = (
+                    f"🎉 Happy Birthday, {name}! ��\n\n"
+                    "Wishing you a wonderful birthday filled with joy and celebration. "
+                    "May your day be as special as you are!\n\n- WhatsApp Birthday Bot"
+                )
+                success = send_message(group, message)
+                if success:
+                    groups_with_birthdays.add(group)
+            else:
+                logger.warning(f"⚠️ No group found for group_id '{group_id}'")
+
+    # Send default message to remaining groups
+    fun_fact = load_fun_fact()
+    default_message = (
+        "Village robot here with your daily fun fact...\n"
+        "\n\n"
+        f"💡 {fun_fact}"
+    )
+    if not birthdays:
+        logger.info("📭 No birthdays today. Sending default to all groups.")
+        targets = group_map.values()
+    else:
+        logger.info("📮 Sending default message to groups without birthdays.")
+        targets = [g for g in group_map.values() if g not in groups_with_birthdays]
+
+    for group in targets:
+        send_message(group, default_message)
+
+if __name__ == "__main__":
+    main()

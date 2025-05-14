@@ -1,0 +1,28 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install cron
+RUN apt-get update && apt-get install -y cron
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Configure environment variables for Docker networking
+ENV BAILEYS_URL=http://baileys-bot:3005
+ENV PYTHONUNBUFFERED=1
+
+# Create cron job
+RUN echo "0 8 * * * cd /app && python /app/app/whatsapp/whatsapp_birthday_service.py >> /app/cron.log 2>&1" > /etc/cron.d/birthday-cron
+RUN chmod 0644 /etc/cron.d/birthday-cron
+RUN crontab /etc/cron.d/birthday-cron
+
+# Create a script to initialize log files and start cron
+RUN echo '#!/bin/bash\ntouch /app/cron.log\nchmod 0666 /app/cron.log\nexec cron -f' > /app/start-cron.sh
+RUN chmod +x /app/start-cron.sh
+
+CMD ["/app/start-cron.sh"]

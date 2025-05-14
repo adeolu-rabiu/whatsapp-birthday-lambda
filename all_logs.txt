@@ -1,0 +1,396 @@
+/home/agzo/whatsapp-birthday-lambda/venv/bin/python: can't open file '/home/agzo/whatsapp-birthday-lambda/whatsapp_birthday_service.py': [Errno 2] No such file or directory
+2025-03-30 02:52:44,201 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-30 02:52:44,202 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 02:52:45,189 - whatsapp_birthday_service - INFO - 🎈 Found 1 birthday(s) today
+2025-03-30 02:52:46,066 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': 🎉 Happy Birthday, Dr. Dre! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-03-30 05:03:39,445 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-30 05:03:39,448 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 05:03:40,391 - whatsapp_birthday_service - INFO - 🎈 Found 1 birthday(s) today
+2025-03-30 05:03:40,649 - whatsapp_birthday_service - ERROR - ❌ Failed to send message to 'IT_Study_Group': HTTPConnectionPool(host='localhost', port=3005): Max retries exceeded with url: /send (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7fec69485ae0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-03-30 05:13:03,717 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-30 05:13:03,720 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 05:13:04,090 - whatsapp_birthday_service - INFO - 🎈 Found 1 birthday(s) today
+2025-03-30 05:13:04,303 - whatsapp_birthday_service - ERROR - ❌ Failed to send message to 'IT_Study_Group': HTTPConnectionPool(host='localhost', port=3005): Max retries exceeded with url: /send (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7fe42e079ae0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-03-30 05:33:38,994 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-30 05:33:38,997 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 05:33:40,067 - whatsapp_birthday_service - INFO - 🎈 Found 1 birthday(s) today
+2025-03-30 05:33:41,244 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': 🎉 Happy Birthday, Dr. Dre! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-03-30 05:34:20,919 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-30 05:34:20,921 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 05:34:21,199 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-03-30 05:34:21,411 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-03-30 05:34:21,412 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 05:34:21,721 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-03-30 05:34:25,461 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-03-30 05:34:26,207 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-03-30 05:34:26,671 - whatsapp_birthday_service - ERROR - ❌ Failed to send message to 'Family_Corner': 404 Client Error: Not Found for url: http://localhost:3005/send
+2025-03-30 08:00:01,600 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-30 08:00:01,603 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 08:00:02,623 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-03-30 08:00:02,892 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-03-30 08:00:02,892 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-30
+2025-03-30 08:00:03,118 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-03-30 08:00:04,601 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-03-30 08:00:05,522 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-03-30 08:00:05,984 - whatsapp_birthday_service - ERROR - ❌ Failed to send message to 'Family_Corner': 404 Client Error: Not Found for url: http://localhost:3005/send
+2025-03-31 08:00:01,766 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-03-31 08:00:01,769 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-31
+2025-03-31 08:00:02,721 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-03-31 08:00:02,976 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-03-31 08:00:02,977 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 03-31
+2025-03-31 08:00:03,192 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-03-31 08:00:05,159 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-03-31 08:00:06,844 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-03-31 08:00:07,446 - whatsapp_birthday_service - ERROR - ❌ Failed to send message to 'Family_Corner': 404 Client Error: Not Found for url: http://localhost:3005/send
+2025-04-01 08:00:02,288 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-01 08:00:02,291 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-01
+2025-04-01 08:00:03,496 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-01 08:00:03,900 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-01 08:00:03,901 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-01
+2025-04-01 08:00:04,221 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-01 08:00:06,425 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-04-01 08:00:07,881 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-04-01 08:00:08,396 - whatsapp_birthday_service - ERROR - ❌ Failed to send message to 'Family_Corner': 404 Client Error: Not Found for url: http://localhost:3005/send
+2025-04-02 08:00:02,294 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-02 08:00:02,296 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-02
+2025-04-02 08:00:03,360 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-02 08:00:03,559 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-02 08:00:03,560 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-02
+2025-04-02 08:00:03,820 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-02 08:00:04,731 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-04-02 08:00:05,322 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-04-02 08:00:06,336 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Beautiful morning to you all. I still want to celebrate you all, even though it is no one's birthday. Enjoy the rest of the day.
+2025-04-03 08:00:02,108 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-03 08:00:02,110 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-03
+2025-04-03 08:00:03,227 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-03 08:00:03,434 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-03 08:00:03,434 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-03
+2025-04-03 08:00:03,657 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-03 08:00:05,177 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-03 08:00:06,320 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-03 08:00:07,593 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-04 08:00:01,796 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-04 08:00:01,798 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-04
+2025-04-04 08:00:02,988 - whatsapp_birthday_service - INFO - 🎈 Found 1 birthday(s) today
+2025-04-04 08:00:04,940 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Otunba Olusola Rabiu and Rahman-Olufemi Rabiu! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-05 08:00:01,980 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-05 08:00:01,983 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-05
+2025-04-05 08:00:03,026 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-05 08:00:03,248 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-05 08:00:03,249 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-05
+2025-04-05 08:00:03,479 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-05 08:00:05,124 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-05 08:00:05,973 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-05 08:00:07,013 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-06 08:00:02,143 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-06 08:00:02,144 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-06
+2025-04-06 08:00:03,111 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-06 08:00:03,342 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-06 08:00:03,343 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-06
+2025-04-06 08:00:03,564 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-06 08:00:04,745 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-06 08:00:05,698 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-06 08:00:06,587 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-07 08:00:01,654 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-07 08:00:01,656 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-07
+2025-04-07 08:00:02,538 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-07 08:00:02,749 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-07 08:00:02,750 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-07
+2025-04-07 08:00:02,962 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-07 08:00:03,962 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-07 08:00:04,555 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-07 08:00:05,147 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-08 08:00:02,391 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-08 08:00:02,393 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-08
+2025-04-08 08:00:03,628 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-08 08:00:03,921 - whatsapp_birthday_service - INFO - 📭 No birthdays found today. Sending default message to all configured groups.
+2025-04-08 08:00:03,923 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-08
+2025-04-08 08:00:04,260 - whatsapp_birthday_service - INFO - 🎈 Found 0 birthday(s) today
+2025-04-08 08:00:05,822 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-08 08:00:06,753 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-08 08:00:07,581 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Good morning, everyone! Even though we don't have any birthdays to celebrate today, I wanted to check in and wish you all a wonderful day ahead. May your day be filled with productivity and moments of joy. Regards, The Village Robot.
+2025-04-09 08:00:02,061 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service using Baileys
+2025-04-09 08:00:02,062 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-09
+2025-04-09 08:00:03,297 - whatsapp_birthday_service - INFO - 🎈 Found 1 birthday(s) today
+2025-04-09 08:00:04,270 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Mayowa Rabiu! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-10 08:00:01,603 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-10 08:00:01,605 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-10
+2025-04-10 08:00:02,756 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-10 08:00:03,667 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 There's a 'grave-sitting contest' in the U.S. where people compete to sit in coffins the longest. Last one alive wins.
+2025-04-10 08:00:04,273 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 There's a 'grave-sitting contest' in the U.S. where people compete to sit in coffins the longest. Last one alive wins.
+2025-04-10 08:00:04,918 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 There's a 'grave-sitting contest' in the U.S. where people compete to sit in coffins the longest. Last one alive wins.
+2025-04-11 08:00:01,341 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-11 08:00:01,341 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-11
+2025-04-11 08:00:04,881 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Shiloh Opedare! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-11 08:00:04,886 - whatsapp_birthday_service - INFO - 📮 Sending default message to groups without birthdays.
+2025-04-11 08:00:05,753 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 During the 1970s oil boom, Nigeria built the first skyscraper in West Africa — the Cocoa House in Ibadan.
+2025-04-11 08:00:06,552 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 During the 1970s oil boom, Nigeria built the first skyscraper in West Africa — the Cocoa House in Ibadan.
+2025-04-12 08:00:01,528 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-12 08:00:01,529 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-12
+2025-04-12 08:00:02,755 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-12 08:00:03,311 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 There are more stars in the universe than grains of sand on Earth. Let that humble you.
+2025-04-12 08:00:03,888 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 There are more stars in the universe than grains of sand on Earth. Let that humble you.
+2025-04-12 08:00:04,501 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 There are more stars in the universe than grains of sand on Earth. Let that humble you.
+2025-04-13 08:00:02,166 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-13 08:00:02,168 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-13
+2025-04-13 08:00:03,590 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-13 08:00:04,907 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 Your brain generates about 20 watts of electricity — enough to power a lightbulb. That’s the wattage of overthinking.
+2025-04-13 08:00:05,743 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 Your brain generates about 20 watts of electricity — enough to power a lightbulb. That’s the wattage of overthinking.
+2025-04-13 08:00:06,541 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 Your brain generates about 20 watts of electricity — enough to power a lightbulb. That’s the wattage of overthinking.
+/bin/sh: 1: python: not found
+2025-04-14 08:00:01,716 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-14 08:00:01,718 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-14
+2025-04-14 08:00:03,889 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Mummy Okunlola! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-14 08:00:03,894 - whatsapp_birthday_service - INFO - 📮 Sending default message to groups without birthdays.
+2025-04-14 08:00:04,738 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 An octopus has three hearts, and none of them are into cardio.",
+2025-04-14 08:00:05,509 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 An octopus has three hearts, and none of them are into cardio.",
+/bin/sh: 1: python: not found
+2025-04-15 08:00:01,671 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-15 08:00:01,674 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-15
+2025-04-15 08:01:16,728 - whatsapp_birthday_service - ERROR - ❌ Error fetching data: HTTPSConnectionPool(host='s9i0mo0564.execute-api.eu-west-2.amazonaws.com', port=443): Max retries exceeded with url: /birthdays (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1007)')))
+2025-04-15 08:01:16,738 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-09||Bananas are technically berries, but strawberries aren't. Nature clearly doesn’t follow her own rules.
+2025-04-09||The voices in your head while you read are actually the same as your real voice. You just became self-aware.
+2025-04-09||Owls don’t have eyeballs — they have eye tubes. That’s why their heads spin like a thriller movie.
+2025-04-10||A blue whale's heart is the size of a small car. You could literally hear it beat from 2 miles away.
+2025-04-10||Camels have three eyelids and two rows of eyelashes to protect against sandstorms. Basically desert divas.
+2025-04-10||Birds can see colors humans can’t even imagine. They’re flexing with ultraviolet vision.
+2025-04-11||Trees talk to each other through underground fungi networks. It’s called the Wood Wide Web.
+2025-04-12||A day on Mercury lasts longer than a year on Mercury. Imagine waiting a whole year just for one work shift to end.
+2025-04-12||In Cuba, dancing is part of daily life — schools even include salsa lessons. Now that’s education.
+2025-04-12||In Finland, there’s a 'Wife Carrying Championship.' Winner gets her weight in beer.",
+2025-04-12||Penguins propose to their mates with pebbles. Ladies, if the stone is round, maybe still say yes.
+2025-04-13||There’s a basketball court on top of the US Supreme Court. It's called the ‘Highest Court in the Land’.
+2025-04-15||African Grey Parrots are some of the smartest birds on Earth — they can develop vocabularies of over 100 words and understand context better than some adults at meetings.
+2025-04-11 02:52:58,421 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-11 02:52:58,421 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-11
+2025-04-11 02:53:00,705 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Shiloh Opedare! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-11 02:53:00,714 - whatsapp_birthday_service - INFO - 📮 Sending default message to groups without birthdays.
+2025-04-11 02:53:01,578 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 Trees talk to each other through underground fungi networks. It’s called the Wood Wide Web.
+2025-04-11 02:53:02,406 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 Trees talk to each other through underground fungi networks. It’s called the Wood Wide Web.
+2025-04-11 08:00:01,341 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-11 08:00:01,341 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-11
+2025-04-11 08:00:04,881 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Shiloh Opedare! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-11 08:00:04,886 - whatsapp_birthday_service - INFO - 📮 Sending default message to groups without birthdays.
+2025-04-11 08:00:05,753 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 During the 1970s oil boom, Nigeria built the first skyscraper in West Africa — the Cocoa House in Ibadan.
+2025-04-11 08:00:06,552 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 During the 1970s oil boom, Nigeria built the first skyscraper in West Africa — the Cocoa House in Ibadan.
+2025-04-12 00:42:47,262 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-12 00:42:47,264 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-12
+2025-04-12 00:42:47,705 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-12 00:42:47,708 - whatsapp_birthday_service - ERROR - ❌ Failed to send to 'Family Forum': HTTPConnectionPool(host='localhost', port=3005): Max retries exceeded with url: /send (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7ff36e4c5210>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-04-12 00:42:47,710 - whatsapp_birthday_service - ERROR - ❌ Failed to send to 'IT_Study_Group': HTTPConnectionPool(host='localhost', port=3005): Max retries exceeded with url: /send (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7ff36e4c5510>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-04-12 00:42:47,715 - whatsapp_birthday_service - ERROR - ❌ Failed to send to 'Family_Corner': HTTPConnectionPool(host='localhost', port=3005): Max retries exceeded with url: /send (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7ff36e479750>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-04-12 00:47:34,243 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-12 00:47:34,243 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-12
+2025-04-12 00:47:34,631 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-12 00:47:36,546 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 In Cuba, dancing is part of daily life — schools even include salsa lessons. Now that’s education.
+2025-04-12 00:47:37,646 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 In Cuba, dancing is part of daily life — schools even include salsa lessons. Now that’s education.
+2025-04-12 00:47:38,693 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 In Cuba, dancing is part of daily life — schools even include salsa lessons. Now that’s education.
+2025-04-12 02:26:27,282 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-12 02:26:27,283 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-12
+2025-04-12 02:26:28,426 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-12 02:26:29,361 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 In Finland, there’s a 'Wife Carrying Championship.' Winner gets her weight in beer.",
+2025-04-12 02:26:30,071 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 In Finland, there’s a 'Wife Carrying Championship.' Winner gets her weight in beer.",
+2025-04-12 02:26:30,766 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 In Finland, there’s a 'Wife Carrying Championship.' Winner gets her weight in beer.",
+2025-04-12 08:00:01,528 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-12 08:00:01,529 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-12
+2025-04-12 08:00:02,755 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-12 08:00:03,311 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 There are more stars in the universe than grains of sand on Earth. Let that humble you.
+2025-04-12 08:00:03,888 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 There are more stars in the universe than grains of sand on Earth. Let that humble you.
+2025-04-12 08:00:04,501 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 There are more stars in the universe than grains of sand on Earth. Let that humble you.
+2025-04-12 19:28:24,878 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-12 19:28:24,879 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-12
+2025-04-12 19:28:25,293 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-12 19:28:26,281 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 Penguins propose to their mates with pebbles. Ladies, if the stone is round, maybe still say yes.
+2025-04-12 19:28:27,170 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 Penguins propose to their mates with pebbles. Ladies, if the stone is round, maybe still say yes.
+2025-04-12 19:28:28,025 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 Penguins propose to their mates with pebbles. Ladies, if the stone is round, maybe still say yes.
+2025-04-13 08:00:02,166 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-13 08:00:02,168 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-13
+2025-04-13 08:00:03,590 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-13 08:00:04,907 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 Your brain generates about 20 watts of electricity — enough to power a lightbulb. That’s the wattage of overthinking.
+2025-04-13 08:00:05,743 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 Your brain generates about 20 watts of electricity — enough to power a lightbulb. That’s the wattage of overthinking.
+2025-04-13 08:00:06,541 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 Your brain generates about 20 watts of electricity — enough to power a lightbulb. That’s the wattage of overthinking.
+2025-04-13 17:27:40,915 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-13 17:27:40,916 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-13
+2025-04-13 17:27:42,957 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
+2025-04-13 17:27:44,214 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': Village robot here with your daily fun fact...
+
+
+💡 There’s a basketball court on top of the US Supreme Court. It's called the ‘Highest Court in the Land’.
+2025-04-13 17:27:45,105 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 There’s a basketball court on top of the US Supreme Court. It's called the ‘Highest Court in the Land’.
+2025-04-13 17:27:45,881 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 There’s a basketball court on top of the US Supreme Court. It's called the ‘Highest Court in the Land’.
+2025-04-14 08:00:01,716 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-14 08:00:01,718 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-14
+2025-04-14 08:00:03,889 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Mummy Okunlola! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-14 08:00:03,894 - whatsapp_birthday_service - INFO - 📮 Sending default message to groups without birthdays.
+2025-04-14 08:00:04,738 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 An octopus has three hearts, and none of them are into cardio.",
+2025-04-14 08:00:05,509 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 An octopus has three hearts, and none of them are into cardio.",
+2025-04-15 00:57:30,304 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-15 00:57:30,305 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-15
+2025-04-15 00:57:31,501 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Ayomide Rabiu! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-15 00:57:32,068 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family Forum': 🎉 Happy Birthday, Kemi Okunlola! 🎂
+
+Wishing you a wonderful birthday filled with joy and celebration. May your day be as special as you are!
+
+- WhatsApp Birthday Bot
+2025-04-15 00:57:32,074 - whatsapp_birthday_service - INFO - 📮 Sending default message to groups without birthdays.
+2025-04-15 00:57:32,761 - whatsapp_birthday_service - INFO - ✅ Sent message to 'IT_Study_Group': Village robot here with your daily fun fact...
+
+
+💡 African Grey Parrots are some of the smartest birds on Earth — they can develop vocabularies of over 100 words and understand context better than some adults at meetings.
+2025-04-15 00:57:33,432 - whatsapp_birthday_service - INFO - ✅ Sent message to 'Family_Corner': Village robot here with your daily fun fact...
+
+
+💡 African Grey Parrots are some of the smartest birds on Earth — they can develop vocabularies of over 100 words and understand context better than some adults at meetings.
+2025-04-15 08:00:01,671 - whatsapp_birthday_service - INFO - 🚀 Starting WhatsApp Birthday Service
+2025-04-15 08:00:01,674 - whatsapp_birthday_service - INFO - 📅 Checking for birthdays on: 04-15
+2025-04-15 08:01:16,728 - whatsapp_birthday_service - ERROR - ❌ Error fetching data: HTTPSConnectionPool(host='s9i0mo0564.execute-api.eu-west-2.amazonaws.com', port=443): Max retries exceeded with url: /birthdays (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1007)')))
+2025-04-15 08:01:16,738 - whatsapp_birthday_service - INFO - 📭 No birthdays today. Sending default to all groups.
