@@ -59,7 +59,7 @@ const BirthdayForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!name || !birthDate || !group_id: groupId) {
+    if (!name || !birthDate || !groupId) {
       setError('Please fill in all fields');
       return;
     }
@@ -79,14 +79,14 @@ const BirthdayForm = () => {
           name,
           birthDate,
           birthMonthDay,
-          group_id: group_id: groupId
+          group_id: groupId
         });
       } else {
         await api.addBirthday({
           name,
           birthDate,
           birthMonthDay,
-          group_id: group_id: groupId
+          group_id: groupId
         });
       }
       
@@ -132,8 +132,8 @@ const BirthdayForm = () => {
         <div className="form-group">
           <label htmlFor="group_id: groupId">WhatsApp Group</label>
           <select
-            id="group_id: groupId"
-            value={group_id: groupId}
+            id="groupId"
+            value={groupId}
             onChange={(e) => setGroupId(e.target.value)}
             required
           >
