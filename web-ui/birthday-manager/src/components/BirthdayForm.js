@@ -10,7 +10,7 @@ const BirthdayForm = () => {
   
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [group_id: groupId, setGroupId] = useState('');
+  const [groupId, setGroupId] = useState('');
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -77,15 +77,15 @@ const BirthdayForm = () => {
       if (isEditing) {
         await api.updateBirthday(id, {
           name,
-          birthDate,
-          birthMonthDay,
+          birth_date: birthDate,
+          birth_month_day: birthMonthDay,
           group_id: groupId
         });
       } else {
         await api.addBirthday({
           name,
-          birthDate,
-          birthMonthDay,
+          birth_date: birthDate,
+          birth_month_day: birthMonthDay,
           group_id: groupId
         });
       }
@@ -130,7 +130,7 @@ const BirthdayForm = () => {
         </div>
         
         <div className="form-group">
-          <label htmlFor="group_id: groupId">WhatsApp Group</label>
+          <label htmlFor="groupId">WhatsApp Group</label>
           <select
             id="groupId"
             value={groupId}
