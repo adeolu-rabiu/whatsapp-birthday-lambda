@@ -104,3 +104,36 @@ service-manager_v4.sh
 .env
 .aws/credentials
 .aws/
+whatsapp-baileys-bot/auth/
+**/auth/
+
+# === WhatsApp Authentication (CRITICAL) ===
+whatsapp-baileys-bot/auth/
+**/auth/
+**/*.session
+**/baileys_store/
+
+# === Credentials and Secrets ===
+.env
+.env.*
+*token*
+*secret*
+*key*
+*.pem
+*.crt
+credentials_backup.txt
+backup_credentials.sh
+
+# === Runtime and Logs ===
+*.log
+logs/
+node_modules/
+**/__pycache__/
+venv/
+
+# === Docker Runtime ===
+docker-compose.override.yml
+
+# === Fun Facts Usage ===
+.used_fun_facts.log
+whatsapp-baileys-bot/auth/
