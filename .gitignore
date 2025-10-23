@@ -144,3 +144,5 @@ whatsapp-baileys-bot/auth/
 .aws/
 .aws/credentials
 >>>>>>> temp-branch
+
+whatsapp-baileys-bot/auth/*
