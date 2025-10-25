@@ -1,119 +1,180 @@
-# Project Docs & Assets
+# ==================================================
+# Environment Variables & Secrets
+# ==================================================
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# AWS credentials/secrets
+.aws/
+aws_credentials
+.aws-credentials
+**/aws_credentials
+credentials
+config
+*.pem
+*.key
+id_rsa*
+
+# ==================================================
+# Project docs & assets you don't want committed
+# ==================================================
 Whatsapp_bot_Project.md
 Whatsapp_Birthday Reminder BOT_Architectural Diagram.png
 Whatsapp_Birthday Reminder BOT_Process Flowchart.png
 whatsapp_birthday_flowchart.png
 fun_facts_no_blank_lines.txt
+
+# ==================================================
 # Python
+# ==================================================
 __pycache__/
 *.py[cod]
-*.log
-nohup.out
-.env
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 venv/
+env/
+ENV/
+.venv
+nohup.out
+*.db
+*.sqlite3
 
-# Node.js
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ==================================================
+# Node / React
+# ==================================================
 node_modules/
 web-ui/node_modules/
-dist/
 build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.npm
+.eslintcache
+.env.development
+.env.production
+
+# ==================================================
+# Logs
+# ==================================================
+logs/
+*.log
+*.log.*
+*.tmp
+cron.log
+service_manager_errors.log
+cron_errors.log
+whatsapp.log
+scheduler.log
 filebeat.yml
 
-# AWS SAM & CLI
+# WhatsApp QR codes and tokens
+whatsapp_qr.png
+wppconnect-server/tokens/
+wppconnect-server/node_modules/
+whatsapp-baileys-bot/auth/
+app/whatsapp/chrome_profile_*/
+
+# ==================================================
+# AWS SAM / CLI
+# ==================================================
 .aws-sam/
 aws/
 AWSCLIV2.pkg
 awscliv2.zip
 aws-sam-cli-linux.zip
 
-
-# Backup/swap files
-*~
-*.swp
-*.swo
-
-
-# Ignore Terraform build artifacts
+# ==================================================
+# Terraform
+# ==================================================
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
-crash.log
+*.tfvars
+*.tfplan
+.terraform.tfstate.lock.info
+terraform/.terraform/
+terraform/lambda_tunnel_function/package/
+terraform/lambda_direct/package/
 lambda-backups/
+crash.log
 
+# ==================================================
+# Docker
+# ==================================================
+Dockerfile.swp
+docker-compose.override.yml
 
-
-
-
-# Python
-__pycache__/
-*.py[cod]
-*.log
-*.sqlite3
-*.db
-*.egg-info/
-.env
-*.pem
-
-# React / Node
-node_modules/
-build/
-dist/
-.env.local
-.env.development
-.env.production
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# AWS SAM / Lambda
-.aws-sam/
-*.zip
-
-# VSCode / IDE
+# ==================================================
+# IDEs & Editors
+# ==================================================
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+*.code-workspace
 
-# Chrome Profile / Browser automation
-app/whatsapp/chrome_profile_*/
-
-# Logs
-*.log
-*.log.*
-
+# ==================================================
 # OS
+# ==================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Compiled Bytecode
-*.so
+# ==================================================
+# Compiled/Binaries
+# ==================================================
 *.dll
 *.out
 *.exe
+*.so
 
-# Virtualenv
-venv/
-ENV/
-env/
+# ==================================================
+# Elastic data
+# ==================================================
+esdata/
 
-# Other
+# ==================================================
+# Old backups
+# ==================================================
+*.backup
 *.bak
-nohup.out
+*.old
 
-
-service-manager_v4.sh
-.env
-.aws/credentials
-.aws/
-<<<<<<< HEAD
-whatsapp-baileys-bot/auth/
-**/auth/
-
-# === WhatsApp Authentication (CRITICAL) ===
-whatsapp-baileys-bot/auth/
-**/auth/
-**/*.session
-**/baileys_store/
-
+service-manager*
 # === Credentials and Secrets ===
 .env
 .env.*
@@ -132,18 +193,6 @@ node_modules/
 **/__pycache__/
 venv/
 
-# === Docker Runtime ===
-docker-compose.override.yml
-
 # === Fun Facts Usage ===
 .used_fun_facts.log
-whatsapp-baileys-bot/auth/
-=======
-.aws/credentials
-.aws/
-.aws/
-.aws/credentials
->>>>>>> temp-branch
 
-whatsapp-baileys-bot/auth/*
-whatsapp-baileys-bot/auth/
