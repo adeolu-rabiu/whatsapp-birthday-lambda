@@ -8,7 +8,7 @@ import boto3
 from pathlib import Path
 
 # === Logging Setup ===
-LOG_DIR = "/opt/whatsapp-birthday-lambda/logs"
+LOG_DIR = "/app/logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 LOG_FILE_PATH = os.path.join(LOG_DIR, "whatsapp_birthday_service.log")

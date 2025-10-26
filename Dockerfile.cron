@@ -11,14 +11,18 @@ RUN pip install --no-cache-dir \
     requests==2.31.0 \
     python-dotenv
 
+# This creates /app/app/ structure (matches existing)
 COPY ./app ./app
 RUN mkdir -p /app/logs
 
-ENV BAILEYS_URL=http://wppconnect-bot:3005
+ENV WPPCONNECT_URL=http://wppconnect-bot:3005
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-RUN echo "0 8 * * * root cd /app && python3 /app/app/whatsapp/whatsapp_birthday_service.py >> /app/logs/cron.log 2>&1" > /etc/cron.d/birthday-cron
+# Use the actual path that exists: /app/app/whatsapp/
+RUN echo "PATH=/usr/local/bin:/usr/bin:/bin" > /etc/cron.d/birthday-cron && \
+    echo "0 8 * * * root cd /app && /usr/local/bin/python3 /app/app/whatsapp/whatsapp_birthday_service.py >> /app/logs/cron.log 2>&1" >> /etc/cron.d/birthday-cron
+
 RUN chmod 0644 /etc/cron.d/birthday-cron
 RUN crontab /etc/cron.d/birthday-cron
 RUN touch /app/logs/cron.log

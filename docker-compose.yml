@@ -1,147 +1,139 @@
 services:
-  # ==================================================
-  # Core Application Services
-  # ==================================================
-  
   python-api:
     build:
       context: .
       dockerfile: Dockerfile.api
     container_name: whatsapp-birthday-lambda_python-api
-    ports: ["5000:5000"]
-    env_file: [.env]
+    ports:
+    - 5000:5000
+    env_file:
+    - .env
     volumes:
-      - ./logs:/app/logs
-      - ${HOME}/.aws:/root/.aws:ro
+    - ./logs:/app/logs
+    - ${HOME}/.aws:/root/.aws:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:5000/health || exit 1
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 10s
-    networks: [birthday-network]
-
+    networks:
+    - birthday-network
   wppconnect-bot:
     build:
       context: ./wppconnect-server
       dockerfile: Dockerfile
     container_name: wppconnect-bot
-    ports: ["3005:3005"]
+    ports:
+    - 3005:3005
     volumes:
-      - ./wppconnect-server:/app
-      - /app/node_modules
-      - ./wppconnect-server/tokens:/app/tokens
-      - ${HOME}/.aws:/root/.aws:ro
+    - ./wppconnect-server:/app
+    - /app/node_modules
+    - ./wppconnect-server/tokens:/app/tokens
+    - ${HOME}/.aws:/root/.aws:ro
     restart: unless-stopped
-    networks: [birthday-network]
+    networks:
+    - birthday-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:3005/health
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
-
   web-ui:
     build:
       context: ./web-ui/birthday-manager
       dockerfile: Dockerfile
     container_name: whatsapp-birthday-lambda_web-ui
-    ports: ["3000:3000"]
-    env_file: [./web-ui/birthday-manager/.env]
+    ports:
+    - 3000:3000
+    env_file:
+    - ./web-ui/birthday-manager/.env
     depends_on:
-      - python-api
+    - python-api
     volumes:
-      - ./web-ui/birthday-manager:/app
-      - /app/node_modules
+    - ./web-ui/birthday-manager:/app
+    - /app/node_modules
     stdin_open: true
     tty: true
     restart: unless-stopped
-    networks: [birthday-network]
-
-  # ==================================================
-  # Monitoring & Dashboard
-  # ==================================================
-
+    networks:
+    - birthday-network
   dashboard:
     build:
       context: ./dashboard
     container_name: whatsapp-birthday-lambda-dashboard
-    ports: ["8080:8080"]
+    ports:
+    - 8080:8080
     restart: unless-stopped
-    networks: [birthday-network]
+    networks:
+    - birthday-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      test:
+      - CMD-SHELL
+      - curl -fsS http://localhost:8080/health || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  # ==================================================
-  # Scheduled Tasks
-  # ==================================================
-
   cron:
     build:
       context: .
       dockerfile: Dockerfile.cron
     container_name: whatsapp-birthday-lambda_cron
     volumes:
-      - ./logs:/app/logs
+    - ./logs:/app/logs
     environment:
       BAILEYS_URL: http://wppconnect-bot:3005
-      CRON_SCHEDULE: "0 8 * * *"
-      PYTHONUNBUFFERED: "1"
+      CRON_SCHEDULE: 0 8 * * *
+      PYTHONUNBUFFERED: '1'
       AWS_REGION: eu-west-2
       DYNAMODB_TABLE_NAME: Birthdays
     depends_on:
-      wppconnect-bot:
-        condition: service_healthy
-      python-api:
-        condition: service_healthy
+    - python-api
+    - wppconnect-bot
     restart: unless-stopped
-    networks: [birthday-network]
-    healthcheck:
-      test: ["CMD-SHELL", "test -f /app/logs/cron.log || exit 1"]
-      interval: 60s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  # ==================================================
-  # Logging & Monitoring Stack
-  # ==================================================
-
+    networks:
+    - birthday-network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
     container_name: whatsapp-birthday-lambda_elasticsearch
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms2g -Xmx2g
-      - bootstrap.memory_lock=true
-    ports: ["9200:9200"]
+    - discovery.type=single-node
+    - xpack.security.enabled=false
+    - ES_JAVA_OPTS=-Xms2g -Xmx2g
+    - bootstrap.memory_lock=true
+    ports:
+    - 9200:9200
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+    - esdata:/usr/share/elasticsearch/data
     restart: unless-stopped
-    networks: [birthday-network]
+    networks:
+    - birthday-network
     ulimits:
       memlock:
         soft: -1
         hard: -1
-
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.2
     container_name: whatsapp-birthday-lambda_kibana
-    ports: ["5601:5601"]
+    ports:
+    - 5601:5601
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_NAME=kibana
+    - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    - SERVER_NAME=kibana
     depends_on:
-      - elasticsearch
+    - elasticsearch
     restart: unless-stopped
-    networks: [birthday-network]
-
+    networks:
+    - birthday-network
   filebeat:
     build:
       context: ./filebeat
@@ -149,36 +141,35 @@ services:
     container_name: whatsapp-birthday-lambda_filebeat
     user: root
     volumes:
-      - ./logs:/logs:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./logs:/logs:ro
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
-      - elasticsearch
+    - elasticsearch
     restart: unless-stopped
-    networks: [birthday-network]
-
+    networks:
+    - birthday-network
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.12.2
     container_name: whatsapp-birthday-lambda_metricbeat
     user: root
     volumes:
-      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-      - /proc:/hostfs/proc:ro
-      - /:/hostfs:ro
+    - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+    - /proc:/hostfs/proc:ro
+    - /:/hostfs:ro
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
-      - elasticsearch
+    - elasticsearch
     restart: unless-stopped
-    networks: [birthday-network]
-
+    networks:
+    - birthday-network
 networks:
   birthday-network:
     driver: bridge
     name: whatsapp-birthday-lambda_birthday-network
-
 volumes:
   esdata:
     name: whatsapp-birthday-lambda_esdata
