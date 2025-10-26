@@ -195,4 +195,6 @@ venv/
 
 # === Fun Facts Usage ===
 .used_fun_facts.log
-
+wppconnect-server/*
+view-qr.sh
+*wppconnect*

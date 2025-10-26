@@ -1,173 +1,85 @@
 const express = require('express');
 const wppconnect = require('@wppconnect-team/wppconnect');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 
 let client = null;
-let isConnected = false;
 
-// Initialize WhatsApp client
-async function initializeClient() {
-  try {
-    console.log('🔄 Initializing WhatsApp client...');
-    
-    client = await wppconnect.create({
-      session: 'birthday-bot',
-      catchQR: (base64Qr, asciiQR) => {
-        console.log('📱 QR Code generated:');
-        console.log(asciiQR);
-        console.log('\nScan this QR code with WhatsApp to connect');
-      },
-      statusFind: (statusSession, session) => {
-        console.log('📊 Status:', statusSession);
-        console.log('📝 Session:', session);
-        
-        if (statusSession === 'isLogged') {
-          isConnected = true;
-          console.log('✅ WhatsApp connected successfully!');
-        }
-      },
-      headless: true,
-      devtools: false,
-      useChrome: true,
-      debug: false,
-      logQR: true,
-      browserArgs: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu'
-      ]
-    });
-    
-    console.log('✅ WhatsApp client initialized successfully');
-    return client;
-  } catch (error) {
-    console.error('❌ Error initializing client:', error);
-    throw error;
-  }
+function saveQrPng(base64Qr) {
+  const out = path.join(__dirname, 'qr-code.png');
+  const b64 = base64Qr.replace(/^data:image\/png;base64,/, '');
+  fs.writeFileSync(out, Buffer.from(b64, 'base64'));
+  console.log(`📸 Saved QR to ${out}`);
 }
 
-// Initialize on startup
-initializeClient().catch(err => {
-  console.error('Failed to initialize:', err);
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: isConnected ? 'connected' : 'disconnected',
-    service: 'wppconnect-bot',
-    timestamp: new Date().toISOString(),
-    hasClient: client !== null
+async function start() {
+  console.log('🔄 Initializing WhatsApp client...');
+  client = await wppconnect.create({
+    session: 'birthday-bot',
+    logQR: true,
+    autoClose: 600000, // 10 minutes
+    waitForLogin: true,
+    deviceName: 'Birthday Bot',
+    useChrome: true,
+    headless: true,
+    browserArgs: ['--no-sandbox', '--disable-setuid-sandbox'],
+    catchQR: (base64Qr, asciiQR /*, attempts, urlCode */) => {
+      console.log(asciiQR);
+      saveQrPng(base64Qr);
+      console.log('📱 SCAN THIS QR CODE NOW:\n   http://localhost:3005/qr-code.png');
+      console.log('You have 10 MINUTES to scan it!');
+    }
   });
+
+  console.log('✅ Client created. Waiting for authentication...');
+}
+
+app.get('/health', (_req, res) => {
+  res.json({ ok: true, session: 'birthday-bot' });
 });
 
-// Get all WhatsApp groups
-app.get('/groups', async (req, res) => {
-  try {
-    if (!client) {
-      return res.status(503).json({ 
-        error: 'Client not initialized',
-        groups: [] 
-      });
-    }
-
-    if (!isConnected) {
-      return res.status(503).json({ 
-        error: 'WhatsApp not connected',
-        groups: [] 
-      });
-    }
-
-    console.log('📋 Fetching WhatsApp groups...');
-    const chats = await client.getAllChats();
-    
-    const groups = chats
-      .filter(chat => chat.isGroup)
-      .map(group => ({
-        id: group.id._serialized,
-        name: group.name,
-        participants: group.groupMetadata?.participants?.length || 0
-      }));
-
-    console.log(`✅ Found ${groups.length} groups`);
-    res.json({ groups });
-  } catch (error) {
-    console.error('❌ Error fetching groups:', error);
-    res.status(500).json({ 
-      error: error.message,
-      groups: [] 
-    });
+app.get('/qr-code.png', (_req, res) => {
+  const p = path.join(__dirname, 'qr-code.png');
+  if (fs.existsSync(p)) {
+    res.sendFile(p);
+  } else {
+    res.status(404).json({ error: 'QR not generated yet' });
   }
 });
 
-// Send message to group
+app.get('/groups', async (_req, res) => {
+  try {
+    const chats = await client.listChats();
+    const groups = chats.filter(c => c.isGroup).map(c => ({ id: c.id._serialized, name: c.formattedTitle || c.name }));
+    res.json(groups);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 app.post('/send', async (req, res) => {
   try {
-    const { group, message } = req.body;
+    const { group, message } = req.body || {};
+    if (!group || !message) return res.status(400).json({ error: 'group and message required' });
 
-    if (!client) {
-      return res.status(503).json({ error: 'Client not initialized' });
-    }
+    const chats = await client.listChats();
+    const target = chats.find(c => c.isGroup && (c.formattedTitle === group || c.name === group));
+    if (!target) return res.status(404).json({ error: `Group not found: ${group}` });
 
-    if (!isConnected) {
-      return res.status(503).json({ error: 'WhatsApp not connected' });
-    }
-
-    if (!group || !message) {
-      return res.status(400).json({ error: 'group and message are required' });
-    }
-
-    console.log(`📤 Sending message to group: ${group}`);
-
-    // Find group by name
-    const chats = await client.getAllChats();
-    const targetGroup = chats.find(chat => 
-      chat.isGroup && chat.name.toLowerCase() === group.toLowerCase()
-    );
-
-    if (!targetGroup) {
-      console.log(`❌ Group "${group}" not found`);
-      return res.status(404).json({ error: `Group "${group}" not found` });
-    }
-
-    await client.sendText(targetGroup.id._serialized, message);
-    console.log(`✅ Message sent to ${targetGroup.name}`);
-
-    res.json({
-      success: true,
-      group: targetGroup.name,
-      message: 'Message sent successfully'
-    });
-  } catch (error) {
-    console.error('❌ Error sending message:', error);
-    res.status(500).json({ error: error.message });
+    await client.sendText(target.id._serialized, message);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
   }
-});
-
-// Get connection status
-app.get('/status', (req, res) => {
-  res.json({
-    connected: isConnected,
-    hasClient: client !== null,
-    timestamp: new Date().toISOString()
-  });
 });
 
 const PORT = process.env.PORT || 3005;
-app.listen(PORT, () => {
-  console.log('================================================');
-  console.log(`🚀 wppconnect server running on port ${PORT}`);
-  console.log('================================================');
-  console.log('Endpoints:');
-  console.log(`  Health:  http://localhost:${PORT}/health`);
-  console.log(`  Groups:  http://localhost:${PORT}/groups`);
-  console.log(`  Send:    POST http://localhost:${PORT}/send`);
-  console.log(`  Status:  http://localhost:${PORT}/status`);
-  console.log('================================================');
+app.listen(PORT, () => console.log(`🚀 wppconnect server listening on ${PORT}`));
+
+start().catch(err => {
+  console.error('❌ Failed to initialize:', err);
+  process.exit(1);
 });
