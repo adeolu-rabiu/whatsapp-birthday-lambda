@@ -198,3 +198,6 @@ venv/
 wppconnect-server/*
 view-qr.sh
 *wppconnect*
+
+# WPPConnect session data
+wppconnect-server/tokens/
