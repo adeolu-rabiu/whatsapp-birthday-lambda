@@ -1,3 +1,76 @@
+#!/bin/bash
+
+set -e
+
+echo "🔧 Fixing wppconnect-bot..."
+echo ""
+
+cd /opt/whatsapp-birthday-lambda
+
+# Create wppconnect-server directory if it doesn't exist
+mkdir -p wppconnect-server
+
+# 1. Create Dockerfile
+echo "1. Creating wppconnect-server/Dockerfile..."
+cat > wppconnect-server/Dockerfile << 'DOCKERFILE'
+FROM node:18-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    chromium \
+    chromium-sandbox \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Puppeteer to skip downloading Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Copy package files
+COPY package*.json ./
+
+# Install Node dependencies
+RUN npm install
+
+# Copy application files
+COPY server.js ./
+
+# Create tokens directory
+RUN mkdir -p tokens
+
+# Expose port
+EXPOSE 3005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3005/health || exit 1
+
+# Start server
+CMD ["node", "server.js"]
+DOCKERFILE
+echo "✅ Dockerfile created"
+echo ""
+
+# 2. Create server.js
+echo "2. Creating wppconnect-server/server.js..."
+cat > wppconnect-server/server.js << 'SERVERJS'
 const express = require('express');
 const wppconnect = require('@wppconnect-team/wppconnect');
 
@@ -171,3 +244,49 @@ app.listen(PORT, () => {
   console.log(`  Status:  http://localhost:${PORT}/status`);
   console.log('================================================');
 });
+SERVERJS
+echo "✅ server.js created"
+echo ""
+
+# 3. Create package.json
+echo "3. Creating wppconnect-server/package.json..."
+cat > wppconnect-server/package.json << 'PACKAGEJSON'
+{
+  "name": "wppconnect-birthday-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot using wppconnect",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["whatsapp", "bot", "wppconnect"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@wppconnect-team/wppconnect": "^1.30.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+PACKAGEJSON
+echo "✅ package.json created"
+echo ""
+
+# 4. Create .dockerignore for wppconnect
+echo "4. Creating wppconnect-server/.dockerignore..."
+cat > wppconnect-server/.dockerignore << 'DOCKERIGNORE'
+node_modules
+tokens
+*.log
+.git
+DOCKERIGNORE
+echo "✅ .dockerignore created"
+echo ""
+
+echo "✅ All wppconnect files created!"
+echo ""
+echo "Files created:"
+ls -la wppconnect-server/

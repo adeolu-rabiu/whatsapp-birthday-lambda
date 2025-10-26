@@ -1,12 +1,52 @@
-# .dockerignore
+# wppconnect tokens (CRITICAL - must exclude)
+wppconnect-server/tokens/
+wppconnect-server/node_modules/
+
+# Version control
+.git
+.github
+.gitignore
+
+# Python
+venv/
 __pycache__/
-node_modules/
 *.pyc
 *.pyo
 *.pyd
-*.log
-.env
-.venv/
-Dockerfile
-Dockerfile.api
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.pytest_cache/
 
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# AWS and secrets
+.aws/
+.env
+*.env.local
+
+# Logs and temp files
+*.log
+logs/
+*.tmp
+
+# Other services
+web-ui/
+dashboard/
+filebeat/
+terraform/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Other
+.DS_Store
+*.md
+LICENSE
