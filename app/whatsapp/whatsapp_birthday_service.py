@@ -25,10 +25,15 @@ logging.basicConfig(
 logger = logging.getLogger('whatsapp_birthday_service')
 
 # === Config ===
-BAILEYS_API_URL = "http://localhost:3005/send"
-TEST_SEND_API_URL = "http://localhost:3005/test-send"
-FACT_LOG_PATH = Path("/opt/whatsapp-birthday-lambda/app/whatsapp/.used_fun_facts.log")
-FACT_SOURCE_PATH = Path("/opt/whatsapp-birthday-lambda/app/whatsapp/fun_facts_no_blank_lines.txt")
+WPP_BOT_URL = os.getenv('WPP_BOT_URL', 'http://wppconnect-bot:3005')
+SEND_ENDPOINT = f"{WPP_BOT_URL}/send"
+HEALTH_ENDPOINT = f"{WPP_BOT_URL}/health"
+TEST_SEND_API_URL = "http://wppconnect-bot:3005/test-send"
+BASE_DIR = Path(__file__).parent
+FACT_LOG_PATH = BASE_DIR / '.used_fun_facts.log'
+BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).parent
+FACT_SOURCE_PATH = Path(os.getenv('FACT_SOURCE_PATH', BASE_DIR / 'fun_facts_no_blank_lines.txt'))
 
 def normalize_group_name(name):
     """Normalize group name for better matching"""
@@ -123,7 +128,7 @@ def send_message(group, message):
             payload = {"group": variant, "message": message}
             
             # Use a longer timeout
-            res = requests.post(BAILEYS_API_URL, json=payload, timeout=15)
+            res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
             
             if res.status_code == 200:
                 logger.info(f"✅ Sent message to '{group}' (using variant '{variant}'): {message}")
@@ -152,7 +157,7 @@ def send_message(group, message):
                 if successful_group:
                     logger.info(f"Test succeeded with group name: '{successful_group}', now sending actual message")
                     payload = {"group": successful_group, "message": message}
-                    res = requests.post(BAILEYS_API_URL, json=payload, timeout=15)
+                    res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
                     
                     if res.status_code == 200:
                         logger.info(f"✅ Sent actual message to '{successful_group}': {message}")
@@ -187,7 +192,7 @@ def send_message(group, message):
                             logger.info(f"Found potential match: '{available_name}', trying it")
                             try:
                                 payload = {"group": available_name, "message": message}
-                                res = requests.post(BAILEYS_API_URL, json=payload, timeout=15)
+                                res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
                                 
                                 if res.status_code == 200:
                                     logger.info(f"✅ Sent message to '{available_name}': {message}")
@@ -202,12 +207,12 @@ def send_message(group, message):
     # Get latest diagnostics
     try:
         # Check WhatsApp status
-        status_url = "http://localhost:3005/status"
+        status_url = "http://wppconnect-bot:3005/health"
         status_res = requests.get(status_url, timeout=5)
         logger.info(f"WhatsApp bot status: {status_res.status_code} - {status_res.text}")
         
         # Get detailed group info
-        debug_url = "http://localhost:3005/debug-groups"
+        debug_url = "http://wppconnect-bot:3005/debug-groups"
         debug_res = requests.get(debug_url, timeout=5)
         if debug_res.status_code == 200:
             debug_data = debug_res.json()
@@ -220,7 +225,7 @@ def send_message(group, message):
 
 def list_available_whatsapp_groups():
     try:
-        status_url = "http://localhost:3005/groups"
+        status_url = "http://wppconnect-bot:3005/groups"
         res = requests.get(status_url, timeout=5)
         if res.status_code == 200:
             groups = res.json()
@@ -245,7 +250,7 @@ def main():
     
     # Check the WhatsApp connection first
     try:
-        status_url = "http://localhost:3005/status"
+        status_url = "http://wppconnect-bot:3005/health"
         status_res = requests.get(status_url, timeout=5)
         logger.info(f"WhatsApp bot status: {status_res.status_code} - {status_res.text}")
         
@@ -296,7 +301,7 @@ def main():
 
     # Force send a test message to all groups
     logger.info("🔍 Sending a verification message to ensure the system is working")
-    test_message = f"🔧 System check at {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n\nThis is an automated test to verify the WhatsApp Birthday Service is working correctly."
+    test_message = f"🔧 System check at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\nThis is an automated test to verify the WhatsApp Birthday Service is working correctly."
     
     # Get all available groups directly from WhatsApp
     available_groups = list_available_whatsapp_groups()

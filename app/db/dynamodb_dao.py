@@ -1,7 +1,7 @@
 import boto3
 import logging
 import os
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -75,3 +75,48 @@ class BirthdayDAO:
             logger.error(f"Error deleting birthday {birthday_id} from group {group_id}: {str(e)}")
             return False
 
+    # --- Compatibility helpers expected by the API ---
+
+    def get_all_birthdays(self):
+        """Return ALL birthday items from the Birthdays table."""
+        items = []
+        scan_kwargs = {}
+        while True:
+            resp = self.birthdays_table.scan(**scan_kwargs)
+            items.extend(resp.get('Items', []))
+            last_key = resp.get('LastEvaluatedKey')
+            if not last_key:
+                break
+            scan_kwargs['ExclusiveStartKey'] = last_key
+        return items
+
+    def get_all_groups(self):
+        """Return ALL groups from the WhatsAppGroups table."""
+        items = []
+        scan_kwargs = {}
+        while True:
+            resp = self.groups_table.scan(**scan_kwargs)
+            items.extend(resp.get('Items', []))
+            last_key = resp.get('LastEvaluatedKey')
+            if not last_key:
+                break
+            scan_kwargs['ExclusiveStartKey'] = last_key
+        return items
+
+    def get_todays_birthdays_global(self, month_day):
+        """Return all birthdays across all groups for a given MM-DD."""
+        items = []
+        scan_kwargs = {'FilterExpression': Attr('birth_month_day').eq(month_day)}
+        while True:
+            resp = self.birthdays_table.scan(**scan_kwargs)
+            items.extend(resp.get('Items', []))
+            last_key = resp.get('LastEvaluatedKey')
+            if not last_key:
+                break
+            scan_kwargs['ExclusiveStartKey'] = last_key
+        return items
+
+# Back-compat alias for older imports
+class DynamoDBDAO(BirthdayDAO):
+    """Back-compat alias expected by the Flask API layer."""
+    pass
