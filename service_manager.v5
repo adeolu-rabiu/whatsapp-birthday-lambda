@@ -1,0 +1,797 @@
+#!/bin/bash
+
+# WhatsApp Birthday Bot Service Manager
+# Version 5.0 - Updated for wppconnect with complete ELK stack
+
+# Set error handling
+set -e
+
+# Colors for better readability
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Get the absolute path of the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Default Docker Compose project name
+COMPOSE_PROJECT_NAME="whatsapp-birthday-lambda"
+
+# Log to file function for error tracking
+function log_to_file() {
+  local log_level="$1"
+  local message="$2"
+  local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [$log_level] $message" >> "$PROJECT_ROOT/service_manager.log"
+}
+
+# Service Ports
+WPPCONNECT_PORT=3005
+REACT_APP_PORT=3000
+PYTHON_API_PORT=5000
+DASHBOARD_PORT=8080
+ELASTICSEARCH_PORT=9200
+KIBANA_PORT=5601
+
+# URLs
+PYTHON_API_URL="http://localhost:${PYTHON_API_PORT}"
+WPPCONNECT_URL="http://localhost:${WPPCONNECT_PORT}"
+WEB_UI_URL="http://localhost:${REACT_APP_PORT}"
+DASHBOARD_URL="http://localhost:${DASHBOARD_PORT}"
+KIBANA_URL="http://localhost:${KIBANA_PORT}"
+
+function log_success() {
+  echo -e "${GREEN}✅ $1${NC}"
+}
+
+function log_warning() {
+  echo -e "${YELLOW}⚠️ $1${NC}"
+}
+
+function log_error() {
+  echo -e "${RED}❌ $1${NC}"
+}
+
+function log_info() {
+  echo -e "${BLUE}📌 $1${NC}"
+}
+
+function log_highlight() {
+  echo -e "${PURPLE}🔍 $1${NC}"
+}
+
+function log_cmd() {
+  echo -e "${CYAN}🖥️ $1${NC}"
+}
+
+function ensure_log_files() {
+  mkdir -p "$PROJECT_ROOT/logs"
+  touch "$PROJECT_ROOT/logs/service_manager.log"
+  log_success "Log files are ready"
+}
+
+function check_docker() {
+  if ! command -v docker &> /dev/null; then
+    log_error "Docker is not installed. Please install Docker first."
+    exit 1
+  fi
+  
+  if ! command -v docker-compose &> /dev/null; then
+    log_error "Docker Compose is not installed. Please install Docker Compose first."
+    exit 1
+  fi
+  
+  log_success "Docker and Docker Compose are installed."
+  
+  if ! docker info &>/dev/null; then
+    log_error "Docker daemon is not running. Please start Docker first."
+    exit 1
+  fi
+  
+  log_success "Docker daemon is running."
+}
+
+function check_services() {
+  log_info "Checking Docker services status..."
+  echo ""
+  
+  # Expected services in current stack
+  EXPECTED_SERVICES=(
+    "python-api"
+    "wppconnect-bot"
+    "web-ui"
+    "dashboard"
+    "elasticsearch"
+    "kibana"
+    "filebeat"
+    "metricbeat"
+    "cron"
+  )
+  
+  local all_running=true
+  
+  for service in "${EXPECTED_SERVICES[@]}"; do
+    if docker ps --format '{{.Names}}' | grep -q "${service}"; then
+      log_success "${service} is running"
+    else
+      log_warning "${service} is not running"
+      all_running=false
+    fi
+  done
+  
+  echo ""
+  if [ "$all_running" = true ]; then
+    log_success "All services are operational! 🎉"
+  else
+    log_warning "Some services are not running. Check logs for details."
+  fi
+}
+
+function docker_compose_up() {
+  log_info "Starting all Docker containers..."
+  
+  cd "$PROJECT_ROOT"
+  
+  if [ ! -f "$PROJECT_ROOT/docker-compose.yml" ]; then
+    log_error "docker-compose.yml not found in $PROJECT_ROOT"
+    return 1
+  fi
+  
+  docker-compose up -d
+  
+  if [ $? -eq 0 ]; then
+    log_success "All Docker containers started successfully"
+    sleep 5
+    check_services
+    echo ""
+    show_access_urls
+  else
+    log_error "Failed to start Docker containers"
+    return 1
+  fi
+}
+
+function docker_compose_down() {
+  log_info "Stopping all Docker containers..."
+  
+  cd "$PROJECT_ROOT"
+  docker-compose down
+  
+  if [ $? -eq 0 ]; then
+    log_success "All Docker containers stopped successfully"
+  else
+    log_error "Failed to stop Docker containers"
+    return 1
+  fi
+}
+
+function docker_compose_restart() {
+  log_info "Restarting all Docker containers..."
+  
+  cd "$PROJECT_ROOT"
+  docker-compose restart
+  
+  if [ $? -eq 0 ]; then
+    log_success "All Docker containers restarted successfully"
+    sleep 5
+    check_services
+  else
+    log_error "Failed to restart Docker containers"
+    return 1
+  fi
+}
+
+function restart_single_service() {
+  log_info "Restarting a specific Docker service..."
+  echo ""
+  
+  echo "Available services:"
+  docker-compose ps --services | nl
+  echo ""
+  
+  read -p "Enter the number of the service to restart: " service_num
+  
+  service_name=$(docker-compose ps --services | sed "${service_num}q;d")
+  
+  if [ -z "$service_name" ]; then
+    log_error "Invalid service number"
+    return 1
+  fi
+  
+  log_info "Restarting $service_name..."
+  docker-compose restart "$service_name"
+  
+  if [ $? -eq 0 ]; then
+    log_success "$service_name restarted successfully"
+    sleep 3
+    docker-compose ps "$service_name"
+  else
+    log_error "Failed to restart $service_name"
+    return 1
+  fi
+}
+
+function view_docker_logs() {
+  log_info "Viewing Docker logs..."
+  echo ""
+  
+  echo "Available services:"
+  docker-compose ps --services | nl
+  echo "0) All services"
+  echo ""
+  
+  read -p "Enter the number of the service to view logs: " service_num
+  
+  if [ "$service_num" = "0" ]; then
+    log_info "Viewing logs for all services (press Ctrl+C to exit)..."
+    docker-compose logs -f --tail=50
+  else
+    service_name=$(docker-compose ps --services | sed "${service_num}q;d")
+    
+    if [ -z "$service_name" ]; then
+      log_error "Invalid service number"
+      return 1
+    fi
+    
+    log_info "Viewing logs for $service_name (press Ctrl+C to exit)..."
+    docker-compose logs -f --tail=100 "$service_name"
+  fi
+}
+
+function display_birthdays() {
+  log_info "Fetching birthdays from Python API..."
+  echo ""
+  
+  response=$(curl -s "${PYTHON_API_URL}/birthdays")
+  
+  if [ $? -eq 0 ]; then
+    echo "$response" | jq -r '.[] | "🎂 \(.name) - \(.date) (\(.group))"' 2>/dev/null || echo "$response"
+    echo ""
+    log_success "Birthdays fetched successfully"
+  else
+    log_error "Failed to fetch birthdays"
+  fi
+}
+
+function add_birthday() {
+  log_info "Adding a new birthday..."
+  echo ""
+  
+  read -p "Enter name: " name
+  read -p "Enter date (YYYY-MM-DD): " date
+  read -p "Enter WhatsApp group name: " group
+  
+  response=$(curl -s -X POST "${PYTHON_API_URL}/birthdays" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\":\"$name\",\"date\":\"$date\",\"group\":\"$group\"}")
+  
+  if echo "$response" | jq -e '.id' > /dev/null 2>&1; then
+    log_success "Birthday added successfully!"
+    echo "$response" | jq .
+  else
+    log_error "Failed to add birthday"
+    echo "$response"
+  fi
+}
+
+function delete_birthday() {
+  log_info "Deleting a birthday..."
+  echo ""
+  
+  # First, display all birthdays
+  display_birthdays
+  echo ""
+  
+  read -p "Enter birthday ID to delete: " birthday_id
+  
+  response=$(curl -s -X DELETE "${PYTHON_API_URL}/birthdays/${birthday_id}")
+  
+  if [ $? -eq 0 ]; then
+    log_success "Birthday deleted successfully"
+    echo "$response"
+  else
+    log_error "Failed to delete birthday"
+  fi
+}
+
+function display_groups() {
+  log_info "Fetching WhatsApp groups from wppconnect..."
+  echo ""
+  
+  response=$(curl -s "${WPPCONNECT_URL}/groups")
+  
+  if [ $? -eq 0 ]; then
+    echo "$response" | jq -r '.groups[] | "📱 \(.name) - \(.participants) members (ID: \(.id))"' 2>/dev/null || echo "$response"
+    echo ""
+    log_success "Groups fetched successfully"
+  else
+    log_error "Failed to fetch groups. Is wppconnect connected?"
+  fi
+}
+
+function test_send_message() {
+  log_info "Sending test WhatsApp message..."
+  echo ""
+  
+  # First display available groups
+  display_groups
+  echo ""
+  
+  read -p "Enter group name (exact match): " group_name
+  read -p "Enter message: " message
+  
+  response=$(curl -s -X POST "${WPPCONNECT_URL}/send" \
+    -H "Content-Type: application/json" \
+    -d "{\"group\":\"$group_name\",\"message\":\"$message\"}")
+  
+  if echo "$response" | jq -e '.success' > /dev/null 2>&1; then
+    log_success "Message sent successfully!"
+    echo "$response" | jq .
+  else
+    log_error "Failed to send message"
+    echo "$response" | jq .
+  fi
+}
+
+function check_whatsapp_connection() {
+  log_info "Checking WhatsApp connection status..."
+  echo ""
+  
+  response=$(curl -s "${WPPCONNECT_URL}/health")
+  
+  if [ $? -eq 0 ]; then
+    echo "$response" | jq .
+    
+    if echo "$response" | jq -e '.ok == true' > /dev/null 2>&1; then
+      log_success "WhatsApp is connected!"
+      
+      # Get groups count
+      groups_response=$(curl -s "${WPPCONNECT_URL}/groups")
+      group_count=$(echo "$groups_response" | jq -r '.groups | length' 2>/dev/null)
+      
+      if [ -n "$group_count" ]; then
+        log_info "Available groups: $group_count"
+      fi
+    else
+      log_warning "WhatsApp is not connected. You may need to scan QR code."
+      log_info "Visit ${WPPCONNECT_URL}/qr-code.png to get QR code"
+    fi
+  else
+    log_error "Failed to check WhatsApp status"
+  fi
+}
+
+function show_qr_code() {
+  log_info "Getting WhatsApp QR code..."
+  echo ""
+  
+  response=$(curl -s "${WPPCONNECT_URL}/qr")
+  
+  if echo "$response" | jq -e '.available == true' > /dev/null 2>&1; then
+    log_success "QR code is available!"
+    echo ""
+    log_info "Open this URL in your browser to see QR code:"
+    echo -e "${CYAN}${WPPCONNECT_URL}/qr-code.png${NC}"
+    echo ""
+    log_info "Scan with WhatsApp: Settings → Linked Devices → Link a Device"
+  else
+    log_warning "QR code not available. WhatsApp might already be connected."
+    check_whatsapp_connection
+  fi
+}
+
+function restart_whatsapp_connection() {
+  log_info "Restarting WhatsApp connection..."
+  echo ""
+  
+  response=$(curl -s -X POST "${WPPCONNECT_URL}/restart")
+  
+  if [ $? -eq 0 ]; then
+    log_success "WhatsApp connection restart initiated"
+    echo "$response" | jq .
+    sleep 10
+    log_info "Checking new status..."
+    check_whatsapp_connection
+  else
+    log_error "Failed to restart WhatsApp connection"
+  fi
+}
+
+function open_web_ui() {
+  log_info "Opening Web UI in browser..."
+  
+  if [ -n "$BROWSER" ]; then
+    $BROWSER "$WEB_UI_URL" &
+  elif command -v xdg-open &> /dev/null; then
+    xdg-open "$WEB_UI_URL" &
+  elif command -v open &> /dev/null; then
+    open "$WEB_UI_URL" &
+  elif command -v start &> /dev/null; then
+    start "$WEB_UI_URL" &
+  else
+    log_warning "Could not automatically open browser."
+    log_info "Please visit: $WEB_UI_URL"
+  fi
+}
+
+function open_kibana() {
+  log_info "Opening Kibana in browser..."
+  
+  if [ -n "$BROWSER" ]; then
+    $BROWSER "$KIBANA_URL" &
+  elif command -v xdg-open &> /dev/null; then
+    xdg-open "$KIBANA_URL" &
+  elif command -v open &> /dev/null; then
+    open "$KIBANA_URL" &
+  elif command -v start &> /dev/null; then
+    start "$KIBANA_URL" &
+  else
+    log_warning "Could not automatically open browser."
+    log_info "Please visit: $KIBANA_URL"
+  fi
+}
+
+function show_access_urls() {
+  echo ""
+  echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}🌐 Access URLs${NC}"
+  echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "  Web UI:           ${CYAN}${WEB_UI_URL}${NC}"
+  echo -e "  Python API:       ${CYAN}${PYTHON_API_URL}${NC}"
+  echo -e "  WhatsApp Bot:     ${CYAN}${WPPCONNECT_URL}${NC}"
+  echo -e "  Dashboard:        ${CYAN}${DASHBOARD_URL}${NC}"
+  echo -e "  Kibana:           ${CYAN}${KIBANA_URL}${NC}"
+  echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+}
+
+function system_health_check() {
+  clear
+  echo -e "${BLUE}🩺 System Health Check${NC}"
+  echo ""
+  
+  # Check Docker status
+  echo -e "${PURPLE}=== Docker Status ===${NC}"
+  docker info 2>/dev/null | grep "Containers\|Running\|Paused\|Stopped\|Images" || log_error "Cannot get Docker info"
+  
+  # Check Docker containers
+  echo -e "\n${PURPLE}=== Container Status ===${NC}"
+  docker-compose ps
+  
+  # Check disk space
+  echo -e "\n${PURPLE}=== Disk Space ===${NC}"
+  df -h . | awk 'NR==1 || NR==2 {print}'
+  
+  # Check Docker disk usage
+  echo -e "\n${PURPLE}=== Docker Disk Usage ===${NC}"
+  docker system df
+  
+  # Check services connectivity
+  echo -e "\n${PURPLE}=== Services Health ===${NC}"
+  
+  # Python API
+  python_status=$(curl -s -o /dev/null -w "%{http_code}" "${PYTHON_API_URL}/health")
+  if [ "$python_status" = "200" ]; then
+    log_success "Python API: OK ($python_status)"
+  else
+    log_error "Python API: DOWN ($python_status)"
+  fi
+  
+  # wppconnect
+  wpp_response=$(curl -s "${WPPCONNECT_URL}/health")
+  if echo "$wpp_response" | jq -e '.ok == true' > /dev/null 2>&1; then
+    log_success "wppconnect: Connected"
+  else
+    log_warning "wppconnect: Not connected"
+  fi
+  
+  # Web UI
+  web_status=$(curl -s -o /dev/null -w "%{http_code}" "$WEB_UI_URL")
+  if [ "$web_status" = "200" ]; then
+    log_success "Web UI: OK ($web_status)"
+  else
+    log_error "Web UI: DOWN ($web_status)"
+  fi
+  
+  # Elasticsearch
+  es_response=$(curl -s "http://localhost:${ELASTICSEARCH_PORT}/_cluster/health")
+  es_status=$(echo "$es_response" | jq -r '.status' 2>/dev/null)
+  if [ "$es_status" = "green" ] || [ "$es_status" = "yellow" ]; then
+    log_success "Elasticsearch: $es_status"
+  else
+    log_error "Elasticsearch: DOWN"
+  fi
+  
+  # Kibana
+  kibana_status=$(curl -s -o /dev/null -w "%{http_code}" "$KIBANA_URL")
+  if [ "$kibana_status" = "302" ] || [ "$kibana_status" = "200" ]; then
+    log_success "Kibana: OK ($kibana_status)"
+  else
+    log_error "Kibana: DOWN ($kibana_status)"
+  fi
+  
+  echo ""
+  read -p "Press Enter to continue..." dummy
+}
+
+function trigger_birthday_check() {
+  log_info "Manually triggering birthday check..."
+  echo ""
+  
+  response=$(curl -s -X POST "${PYTHON_API_URL}/send-birthday-messages")
+  
+  if [ $? -eq 0 ]; then
+    log_success "Birthday check triggered"
+    echo "$response" | jq . 2>/dev/null || echo "$response"
+  else
+    log_error "Failed to trigger birthday check"
+  fi
+}
+
+function manage_whatsapp_menu() {
+  clear
+  echo -e "${BLUE}📱 WhatsApp Management${NC}"
+  echo "1) Check Connection Status"
+  echo "2) Display All Groups"
+  echo "3) Send Test Message"
+  echo "4) Show QR Code"
+  echo "5) Restart WhatsApp Connection"
+  echo "6) Back to Main Menu"
+  echo ""
+  
+  read -p "Choose an option [1-6]: " choice
+  
+  case $choice in
+    1)
+      check_whatsapp_connection
+      ;;
+    2)
+      display_groups
+      ;;
+    3)
+      test_send_message
+      ;;
+    4)
+      show_qr_code
+      ;;
+    5)
+      restart_whatsapp_connection
+      ;;
+    6)
+      return
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 6."
+      ;;
+  esac
+  
+  echo ""
+  read -p "Press Enter to continue..." dummy
+  manage_whatsapp_menu
+}
+
+function manage_birthdays_menu() {
+  clear
+  echo -e "${BLUE}🎂 Birthday Management${NC}"
+  echo "1) Display All Birthdays"
+  echo "2) Add New Birthday"
+  echo "3) Delete Birthday"
+  echo "4) Trigger Birthday Check Now"
+  echo "5) Open Web UI"
+  echo "6) Back to Main Menu"
+  echo ""
+  
+  read -p "Choose an option [1-6]: " choice
+  
+  case $choice in
+    1)
+      display_birthdays
+      ;;
+    2)
+      add_birthday
+      ;;
+    3)
+      delete_birthday
+      ;;
+    4)
+      trigger_birthday_check
+      ;;
+    5)
+      open_web_ui
+      ;;
+    6)
+      return
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 6."
+      ;;
+  esac
+  
+  echo ""
+  read -p "Press Enter to continue..." dummy
+  manage_birthdays_menu
+}
+
+function troubleshooting_menu() {
+  clear
+  echo -e "${BLUE}🔧 Troubleshooting & Advanced Options${NC}"
+  echo "1) System Health Check"
+  echo "2) View Docker Logs"
+  echo "3) Restart Single Service"
+  echo "4) Check Disk Usage"
+  echo "5) View Elasticsearch Status"
+  echo "6) Open Kibana Dashboard"
+  echo "7) Clean Docker System"
+  echo "8) Back to Main Menu"
+  echo ""
+  
+  read -p "Choose an option [1-8]: " choice
+  
+  case $choice in
+    1)
+      system_health_check
+      ;;
+    2)
+      view_docker_logs
+      ;;
+    3)
+      restart_single_service
+      ;;
+    4)
+      echo ""
+      df -h .
+      echo ""
+      docker system df
+      ;;
+    5)
+      echo ""
+      curl -s "http://localhost:${ELASTICSEARCH_PORT}/_cluster/health" | jq .
+      ;;
+    6)
+      open_kibana
+      ;;
+    7)
+      log_warning "This will remove unused Docker data"
+      read -p "Continue? (y/n): " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        docker system prune -f
+        log_success "Docker system cleaned"
+      fi
+      ;;
+    8)
+      return
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 8."
+      ;;
+  esac
+  
+  echo ""
+  read -p "Press Enter to continue..." dummy
+  troubleshooting_menu
+}
+
+function show_help() {
+  clear
+  echo -e "${BLUE}�� WhatsApp Birthday Bot - Help Guide${NC}"
+  echo ""
+  echo "This service manager controls the Docker-based components:"
+  echo ""
+  echo -e "${PURPLE}Core Services:${NC}"
+  echo "  1. Web UI (Port 3000) - React frontend for managing birthdays"
+  echo "  2. Python API (Port 5000) - Backend API for birthday operations"
+  echo "  3. wppconnect-bot (Port 3005) - WhatsApp messaging service"
+  echo "  4. Dashboard (Port 8080) - System monitoring dashboard"
+  echo ""
+  echo -e "${PURPLE}Monitoring Stack:${NC}"
+  echo "  5. Elasticsearch (Port 9200) - Log storage and search"
+  echo "  6. Kibana (Port 5601) - Log visualization dashboard"
+  echo "  7. Filebeat - Log collection service"
+  echo "  8. Metricbeat - System metrics collection"
+  echo ""
+  echo -e "${PURPLE}Background Services:${NC}"
+  echo "  9. Cron - Scheduled birthday notifications (daily 8:00 AM)"
+  echo ""
+  echo -e "${PURPLE}Main Features:${NC}"
+  echo "  • Start/Stop/Restart all services or individual containers"
+  echo "  • Manage WhatsApp connection and groups"
+  echo "  • Add, view, and delete birthday reminders"
+  echo "  • Send test messages to WhatsApp groups"
+  echo "  • View logs and system health"
+  echo "  • Access monitoring dashboards"
+  echo ""
+  echo -e "${PURPLE}WhatsApp Setup:${NC}"
+  echo "  1. Start services: Option 1 from main menu"
+  echo "  2. Get QR code: WhatsApp Management → Show QR Code"
+  echo "  3. Scan with phone: WhatsApp → Settings → Linked Devices"
+  echo "  4. Verify connection: WhatsApp Management → Check Status"
+  echo ""
+  echo -e "${PURPLE}Troubleshooting:${NC}"
+  echo "  • Check service health before troubleshooting"
+  echo "  • View logs for specific service errors"
+  echo "  • WhatsApp connection issues: Restart connection or rescan QR"
+  echo "  • API connectivity: Verify containers are running"
+  echo "  • Use Kibana for detailed log analysis"
+  echo ""
+  read -p "Press Enter to continue..." dummy
+}
+
+# Initialize environment
+ensure_log_files
+check_docker
+
+# Main menu
+while true; do
+  clear
+  echo ""
+  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}📦 WhatsApp Birthday Bot Service Manager${NC} ${CYAN}v5.0${NC}"
+  echo -e "${CYAN}Docker Stack with wppconnect & ELK Monitoring${NC}"
+  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+  echo "1)  Start All Services"
+  echo "2)  Stop All Services"
+  echo "3)  Restart All Services"
+  echo "4)  Check Service Status"
+  echo "5)  View Docker Logs"
+  echo ""
+  echo "6)  Manage WhatsApp Connection"
+  echo "7)  Manage Birthdays"
+  echo ""
+  echo "8)  Troubleshooting & Advanced"
+  echo "9)  Open Web UI"
+  echo "10) Help & Information"
+  echo "11) Exit"
+  echo ""
+  
+  read -p "Choose an option [1-11]: " choice
+
+  case $choice in
+    1)
+      docker_compose_up
+      ;;
+    2)
+      docker_compose_down
+      ;;
+    3)
+      docker_compose_restart
+      ;;
+    4)
+      check_services
+      ;;
+    5)
+      view_docker_logs
+      ;;
+    6)
+      manage_whatsapp_menu
+      ;;
+    7)
+      manage_birthdays_menu
+      ;;
+    8)
+      troubleshooting_menu
+      ;;
+    9)
+      open_web_ui
+      ;;
+    10)
+      show_help
+      ;;
+    11)
+      echo ""
+      echo -e "${GREEN}Exiting. Thanks for using Birthday Bot! 👋${NC}"
+      echo ""
+      exit 0
+      ;;
+    *)
+      log_error "Invalid choice. Please enter a number between 1 and 11."
+      ;;
+  esac
+  
+  echo ""
+  read -p "Press Enter to continue..." dummy
+done
