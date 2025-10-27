@@ -1,0 +1,11 @@
+server.host: "0.0.0.0"
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+
+# Preconfigured Slack connector (ID: slack_webhook)
+xpack.actions.preconfigured:
+  slack_webhook:
+    name: "Slack Webhook"
+    actionTypeId: .slack
+    secrets:
+      webhookUrl: ${SLACK_WEBHOOK_URL}
+

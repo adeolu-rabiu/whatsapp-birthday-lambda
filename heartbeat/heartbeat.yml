@@ -1,0 +1,53 @@
+heartbeat.monitors:
+  - type: http
+    id: python-api
+    name: python-api
+    schedule: '@every 30s'
+    urls: ['http://python-api:5000/health']
+    check.request:
+      method: GET
+    check.response:
+      status: 200
+
+  - type: http
+    id: wppconnect
+    name: wppconnect
+    schedule: '@every 30s'
+    urls: ['http://wppconnect-bot:3005/health']
+    check.response:
+      status: 200
+
+  - type: http
+    id: web-ui
+    name: web-ui
+    schedule: '@every 30s'
+    urls: ['http://web-ui:3000']
+
+  - type: http
+    id: dashboard
+    name: dashboard
+    schedule: '@every 30s'
+    urls: ['http://dashboard:8080/health']
+    check.response:
+      status: 200
+
+  - type: http
+    id: elasticsearch
+    name: elasticsearch
+    schedule: '@every 30s'
+    urls: ['http://elasticsearch:9200/_cluster/health']
+
+  - type: http
+    id: kibana
+    name: kibana
+    schedule: '@every 30s'
+    urls: ['http://kibana:5601/api/status']
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+
+strict.perms: false
