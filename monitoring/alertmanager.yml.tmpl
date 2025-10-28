@@ -1,0 +1,26 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: slack
+  group_by: ['alertname','instance']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+
+receivers:
+  - name: slack
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        {{- if .Env.SLACK_CHANNEL }}
+        channel: "${SLACK_CHANNEL}"
+        {{- end }}
+        send_resolved: true
+        username: "${SLACK_USERNAME:-Alertmanager}"
+        icon_emoji: "${SLACK_ICON_EMOJI:-:rotating_light:}"
+        title: "[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}"
+        text: >-
+          *Alert:* {{ .CommonAnnotations.summary }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Details:* {{ range .Alerts }}• {{ .Labels.instance }} ({{ .Labels.severity }}) {{ end }}
+

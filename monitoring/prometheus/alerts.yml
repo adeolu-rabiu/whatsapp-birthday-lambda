@@ -1,0 +1,35 @@
+groups:
+- name: infra
+  rules:
+  - alert: NodeDown
+    expr: up{job="node"} == 0
+    for: 1m
+    labels: {severity: critical}
+    annotations:
+      summary: "Node exporter down ({{ $labels.instance }})"
+      description: "No scrape data for 1 minute."
+
+  - alert: HighCPU
+    expr: 100 - (avg by(instance)(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+    for: 10m
+    labels: {severity: warning}
+    annotations:
+      summary: "High CPU on {{ $labels.instance }}"
+      description: "CPU > 85% for 10m."
+
+  - alert: LowDiskSpace
+    expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 10
+    for: 5m
+    labels: {severity: warning}
+    annotations:
+      summary: "Disk space <10% on {{ $labels.instance }}"
+      description: "Volume {{ $labels.mountpoint }} running low."
+
+  - alert: ContainerProbeFail
+    expr: probe_success == 0
+    for: 2m
+    labels: {severity: critical}
+    annotations:
+      summary: "HTTP probe failed: {{ $labels.instance }}"
+      description: "Blackbox probe is failing."
+

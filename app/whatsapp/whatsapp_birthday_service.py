@@ -300,19 +300,19 @@ def main():
         send_message(group, default_message)
 
     # Force send a test message to all groups
-    logger.info("🔍 Sending a verification message to ensure the system is working")
-    test_message = f"🔧 System check at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\nThis is an automated test to verify the WhatsApp Birthday Service is working correctly."
+    #logger.info("🔍 Sending a verification message to ensure the system is working")
+    #test_message = f"🔧 System check at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\nThis is an automated test to verify the WhatsApp Birthday Service is working correctly."
     
     # Get all available groups directly from WhatsApp
-    available_groups = list_available_whatsapp_groups()
-    if available_groups:
-        for group in available_groups:
-            group_name = group.get("name")
-            if group_name:
-                logger.info(f"📱 Sending test message to {group_name}")
-                send_message(group_name, test_message)
-    else:
-        logger.error("❌ No WhatsApp groups available for testing")
+   # available_groups = list_available_whatsapp_groups()
+   # if available_groups:
+        #for group in available_groups:
+           # group_name = group.get("name")
+            #if group_name:
+                #logger.info(f"📱 Sending test message to {group_name}")
+                #send_message(group_name, test_message)
+    #else:
+        #logger.error("❌ No WhatsApp groups available for testing")
 
 if __name__ == "__main__":
     main()

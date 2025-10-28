@@ -1,79 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>WhatsApp Birthday Bot Status</title>
-    <script>
-        const apiBase = "https://s9i0mo0564.execute-api.eu-west-2.amazonaws.com";
-
-        async function fetchStatus() {
-            try {
-                const res = await fetch(`${apiBase}/birthdays`, { method: "GET" });
-                const data = await res.json();
-                document.getElementById("response").innerText = JSON.stringify(data, null, 2);
-                document.getElementById("status").innerText = "Connected";
-                document.getElementById("status").style.backgroundColor = "green";
-            } catch (error) {
-                document.getElementById("response").innerText = `Error: ${error.message}`;
-                document.getElementById("status").innerText = "Error";
-                document.getElementById("status").style.backgroundColor = "red";
-            }
-        }
-
-        async function checkBirthdays() {
-            try {
-                const res = await fetch(`${apiBase}/birthdays`, { method: "POST" });
-                const data = await res.json();
-                document.getElementById("response").innerText = JSON.stringify(data, null, 2);
-            } catch (error) {
-                document.getElementById("response").innerText = `Error: ${error.message}`;
-            }
-        }
-
-        async function sendTestMessage() {
-            const group = prompt("Enter group name:");
-            const message = prompt("Enter message:");
-            if (!group || !message) return;
-
-            try {
-                const res = await fetch(`${apiBase}/test-message`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ group, message })
-                });
-                const data = await res.json();
-                document.getElementById("response").innerText = JSON.stringify(data, null, 2);
-            } catch (error) {
-                document.getElementById("response").innerText = `Error: ${error.message}`;
-            }
-        }
-
-        window.onload = fetchStatus;
-    </script>
+  <meta charset="UTF-8" />
+  <title>WhatsApp Birthday Bot Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --ok:#2e7d32; --err:#c62828; --muted:#666; --bd:#ddd; --bg:#fafafa; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background: var(--bg); color: #111; }
+    h1 { margin: 0 0 16px; }
+    .card { background:#fff; border:1px solid var(--bd); padding:12px; margin:12px 0; border-radius:8px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    button { padding:8px 12px; border:1px solid var(--bd); background:#fff; border-radius:6px; cursor:pointer; }
+    button:hover { background:#f3f3f3; }
+    .pill { padding:2px 8px; border-radius:999px; color:#fff; font-size:12px; vertical-align:middle; }
+    .ok { background: var(--ok); }
+    .err { background: var(--err); }
+    .muted { color: var(--muted); }
+    pre { margin:0; padding:8px; background:#0b1020; color:#cde3ff; border-radius:6px; overflow:auto; min-height:48px; }
+    .small { font-size:12px; }
+  </style>
 </head>
 <body>
-    <h1>WhatsApp Birthday Bot Status</h1>
+  <h1>WhatsApp Birthday Bot Status</h1>
 
-    <div style="border: 1px solid #ccc; padding: 10px;">
-        <h3>Service Status</h3>
-        <p>WhatsApp connection: <span id="status" style="padding: 2px 5px; background: grey; color: white;">Loading...</span></p>
-        <button onclick="fetchStatus()">Refresh Status</button>
+  <!-- Status -->
+  <div class="card">
+    <h3>Service Status</h3>
+    <p>
+      API target: <span id="apiTarget" class="muted">/api → (proxying)</span><br />
+      Connection: <span id="status" class="pill muted">Checking…</span>
+    </p>
+    <div class="row">
+      <button id="btnRefresh">Refresh Status</button>
     </div>
+    <p class="small muted" id="ts"></p>
+  </div>
 
-    <br>
-
-    <div style="border: 1px solid #ccc; padding: 10px;">
-        <h3>Manual Actions</h3>
-        <button onclick="checkBirthdays()">Check Birthdays Now</button>
-        <button onclick="sendTestMessage()">Send Test Message</button>
+  <!-- Actions -->
+  <div class="card">
+    <h3>Manual Actions</h3>
+    <div class="row">
+      <button id="btnCheckBirthdays">Check Birthdays Now</button>
+      <button id="btnSendTest">Send Test Message</button>
     </div>
+  </div>
 
-    <br>
+  <!-- Output -->
+  <div class="card">
+    <h3>Response</h3>
+    <pre id="response">Waiting for action…</pre>
+  </div>
 
-    <div style="border: 1px solid #ccc; padding: 10px;">
-        <h3>Response</h3>
-        <pre id="response">Waiting for action...</pre>
-    </div>
+  <script>
+    // All browser calls go to the dashboard's proxy, which forwards to python-api.
+    const apiBase = "/api";
+
+    const el = (id) => document.getElementById(id);
+    const setPill = (ok, text) => {
+      const s = el("status");
+      s.className = "pill " + (ok ? "ok" : "err");
+      s.textContent = text || (ok ? "Connected" : "Error");
+    };
+    const show = (obj) => el("response").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+    const stamp = () => {
+      const d = new Date();
+      el("ts").textContent = "Last updated: " + d.toLocaleString();
+    };
+
+    async function fetchStatus() {
+      try {
+        // Ask the dashboard for its current target (optional, helpful to verify)
+        const cfg = await fetch("/config", { cache: "no-store" }).then(r => r.json()).catch(() => null);
+        if (cfg && cfg.target) el("apiTarget").textContent = `${apiBase} → ${cfg.target}`;
+
+        // Real health check goes through the proxy to python-api
+        const res = await fetch(`${apiBase}/health`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        setPill(true, "Connected");
+        show(data);
+      } catch (err) {
+        setPill(false, "Error");
+        show({ error: String(err) });
+      } finally {
+        stamp();
+      }
+    }
+
+    async function checkBirthdays() {
+      try {
+        const res = await fetch(`${apiBase}/send-birthday-messages`, { method: "POST" });
+        const data = await res.json();
+        show(data);
+      } catch (err) {
+        show({ error: String(err) });
+      }
+    }
+
+    async function sendTestMessage() {
+      const group = prompt("Enter group name (exact):");
+      const message = prompt("Enter message:");
+      if (!group || !message) return;
+
+      try {
+        const res = await fetch(`${apiBase}/test-whatsapp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ group, message })
+        });
+        const data = await res.json();
+        show(data);
+      } catch (err) {
+        show({ error: String(err) });
+      }
+    }
+
+    // Wire up buttons
+    el("btnRefresh").addEventListener("click", fetchStatus);
+    el("btnCheckBirthdays").addEventListener("click", checkBirthdays);
+    el("btnSendTest").addEventListener("click", sendTestMessage);
+
+    // Initial load
+    fetchStatus();
+  </script>
 </body>
 </html>
 

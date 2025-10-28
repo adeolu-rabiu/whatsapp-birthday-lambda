@@ -33,7 +33,15 @@ services:
     - ./wppconnect-server:/app
     - /app/node_modules
     - ./wppconnect-server/tokens:/app/tokens
+    - ./wppconnect-server/chrome-profile:/app/profile
     - ${HOME}/.aws:/root/.aws:ro
+    command: "sh -lc '\n  find /app/tokens -type f -name \"Singleton*\" -delete 2>/dev/null\
+      \ || true;\n  mkdir -p /app/profile;\n  node server.js\n'\n"
+    environment:
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+      PUPPETEER_ARGS: --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage
+        --disable-gpu --no-first-run --no-default-browser-check --user-data-dir=/app/profile
+    shm_size: 1gb
     restart: unless-stopped
     networks:
     - birthday-network
@@ -70,6 +78,10 @@ services:
     build:
       context: ./dashboard
     container_name: whatsapp-birthday-lambda-dashboard
+    environment:
+    - API_BASE=http://python-api:5000
+    depends_on:
+    - python-api
     ports:
     - 8080:8080
     restart: unless-stopped
@@ -90,6 +102,7 @@ services:
     container_name: whatsapp-birthday-lambda_cron
     volumes:
     - ./logs:/app/logs
+    - ${HOME}/.aws:/root/.aws:ro
     environment:
       BAILEYS_URL: http://wppconnect-bot:3005
       CRON_SCHEDULE: 0 8 * * *
@@ -102,74 +115,95 @@ services:
     restart: unless-stopped
     networks:
     - birthday-network
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
-    container_name: whatsapp-birthday-lambda_elasticsearch
-    environment:
-    - discovery.type=single-node
-    - xpack.security.enabled=false
-    - ES_JAVA_OPTS=-Xms2g -Xmx2g
-    - bootstrap.memory_lock=true
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.55.1
+    container_name: prometheus
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.path=/prometheus
+    - --web.enable-lifecycle
+    volumes:
+    - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    - prometheus-data:/prometheus
     ports:
-    - 9200:9200
-    volumes:
-    - esdata:/usr/share/elasticsearch/data
-    restart: unless-stopped
+    - 9090:9090
     networks:
     - birthday-network
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.12.2
-    container_name: whatsapp-birthday-lambda_kibana
+    restart: unless-stopped
+  alertmanager:
+    image: quay.io/prometheus/alertmanager:v0.27.0
+    container_name: alertmanager
+    command:
+    - --config.file=/etc/alertmanager/alertmanager.yml
+    - --storage.path=/alertmanager
+    - --web.external-url=http://localhost:9093
     ports:
-    - 5601:5601
-    environment:
-    - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    - SERVER_NAME=kibana
-    depends_on:
-    - elasticsearch
-    restart: unless-stopped
-    networks:
-    - birthday-network
-  filebeat:
-    build:
-      context: ./filebeat
-      dockerfile: Dockerfile
-    container_name: whatsapp-birthday-lambda_filebeat
-    user: root
+    - 9093:9093
     volumes:
-    - ./logs:/logs:ro
-    - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-    - elasticsearch
-    restart: unless-stopped
+    - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    - alertmanager-data:/alertmanager
     networks:
     - birthday-network
-  metricbeat:
-    image: docker.elastic.co/beats/metricbeat:8.12.2
-    container_name: whatsapp-birthday-lambda_metricbeat
-    user: root
-    volumes:
-    - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-    - /proc:/hostfs/proc:ro
-    - /:/hostfs:ro
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
     environment:
-    - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    depends_on:
-    - elasticsearch
-    restart: unless-stopped
+    - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+    - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+    - grafana-data:/var/lib/grafana
+    - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+    - 3001:3000
     networks:
     - birthday-network
+    restart: unless-stopped
+    depends_on:
+    - prometheus
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.8.1
+    container_name: node-exporter
+    pid: host
+    network_mode: host
+    restart: unless-stopped
+    command:
+    - --path.rootfs=/host
+    - --collector.textfile.directory=/host/var/lib/node_exporter/textfile
+    volumes:
+    - /:/host:ro,rslave
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    ports:
+    - 8080:8080
+    networks:
+    - birthday-network
+    restart: unless-stopped
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:ro
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+  blackbox:
+    image: quay.io/prometheus/blackbox-exporter:v0.25.0
+    container_name: blackbox
+    ports:
+    - 9115:9115
+    networks:
+    - birthday-network
+    restart: unless-stopped
+    command:
+    - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+    - ./monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
 networks:
   birthday-network:
     driver: bridge
+    external: true
     name: whatsapp-birthday-lambda_birthday-network
 volumes:
-  esdata:
-    name: whatsapp-birthday-lambda_esdata
+  prometheus-data: null
+  grafana-data: null
+  alertmanager-data: null

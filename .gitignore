@@ -201,3 +201,17 @@ view-qr.sh
 
 # WPPConnect session data
 wppconnect-server/tokens/
+
+# === Monitoring Secrets ===
+monitoring/alertmanager.yml
+monitoring/.env
+*webhook*
+*secrets.yml
+
+# === Keep templates ===
+!monitoring/*.template
+!monitoring/*.example
+
+docker-compose.yml.pre-prom-stack.2025-*
+fix-alertmanager-compose.py
+generate-alertmanager-config.sh
