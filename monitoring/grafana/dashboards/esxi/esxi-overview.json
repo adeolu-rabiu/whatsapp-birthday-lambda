@@ -1,0 +1,57 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {"type":"grafana","id":"grafana","name":"Grafana","version":"10.0.0"},
+    {"type":"panel","id":"gauge","name":"Gauge","version":""},
+    {"type":"datasource","id":"prometheus","name":"Prometheus","version":""}
+  ],
+  "annotations": {"list":[]},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["esxi","vmware"],
+  "templating": {"list":[]},
+  "time": {"from":"now-6h","to":"now"},
+  "title": "ESXi Overview",
+  "uid": "esxi-overview",
+  "version": 1,
+  "panels": [
+    {
+      "type":"gauge",
+      "title":"ESXi Host Temperature",
+      "gridPos":{"h":8,"w":8,"x":0,"y":0},
+      "datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},
+      "fieldConfig":{"defaults":{"unit":"celsius","thresholds":{"mode":"absolute","steps":[{"color":"green"},{"color":"yellow","value":60},{"color":"orange","value":75},{"color":"red","value":85}]}},"overrides":[]},
+      "targets":[{"expr":"max by(host_name)( max_over_time(vmware_host_sensor_temperature[5m]) )","refId":"A"}]
+    },
+    {
+      "type":"gauge",
+      "title":"CPU Usage (%)",
+      "gridPos":{"h":8,"w":8,"x":8,"y":0},
+      "datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},
+      "fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},
+      "targets":[{"expr":"100 * max_over_time(vmware_host_cpu_usage[5m]) / max_over_time(vmware_host_cpu_max[5m])","refId":"A"}]
+    },
+    {
+      "type":"gauge",
+      "title":"Memory Usage (%)",
+      "gridPos":{"h":8,"w":8,"x":16,"y":0},
+      "datasource":{"type":"prometheus","uid":"${DS_PROMETHEUS}"},
+      "fieldConfig":{"defaults":{"unit":"percent"},"overrides":[]},
+      "targets":[{"expr":"100 * max_over_time(vmware_host_memory_usage[5m]) / max_over_time(vmware_host_memory_max[5m])","refId":"A"}]
+    }
+  ]
+}

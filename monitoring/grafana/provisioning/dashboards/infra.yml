@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: 'Infra dashboards'
+    folder: 'Infrastructure'
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/infra
+      foldersFromFilesStructure: true
+

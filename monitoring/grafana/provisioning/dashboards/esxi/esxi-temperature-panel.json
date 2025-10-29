@@ -1,0 +1,28 @@
+{
+  "type": "gauge",
+  "title": "ESXi Host Temperature",
+  "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+  "targets": [
+    { "refId": "A", "expr": "vmware_host_sensor_temperature_celsius" }
+  ],
+  "fieldConfig": {
+    "defaults": {
+      "unit": "celsius",
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          { "color": "green",  "value": null },
+          { "color": "yellow", "value": 60 },
+          { "color": "orange", "value": 75 },
+          { "color": "red",    "value": 85 }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "options": {
+    "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+    "showThresholdLabels": true,
+    "showThresholdMarkers": true
+  }
+}

@@ -32,4 +32,22 @@ groups:
     annotations:
       summary: "HTTP probe failed: {{ $labels.instance }}"
       description: "Blackbox probe is failing."
+  - name: esxi-alerts
+    rules:
+      - alert: ESXiHostHighTemperature
+        expr: vmware_host_sensor_temperature_celsius > 80
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ESXi host temperature high"
+          description: "Host {{ $labels.host_name }} temperature is {{ $value }} °C (> 80) for 5m."
 
+      - alert: ESXiDatastoreLowFreeSpace
+        expr: (vmware_datastore_freespace_size / vmware_datastore_capacity_size) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ESXi datastore low free space"
+          description: "Datastore {{ $labels.ds_name }} free < 10% for 10m."

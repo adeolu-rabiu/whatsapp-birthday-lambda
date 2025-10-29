@@ -1,0 +1,22 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Running containers",
+      "gridPos": { "h": 3, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        { "refId": "A", "expr": "count(container_last_seen)" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["infra"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "",
+  "title": "Infra Overview",
+  "version": 1
+}

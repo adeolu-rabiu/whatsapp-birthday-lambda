@@ -167,8 +167,7 @@ services:
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.8.1
     container_name: node-exporter
-    networks:
-    - birthday-network
+    networks: birthday-network
     restart: unless-stopped
     command:
     - --path.rootfs=/host

@@ -132,7 +132,7 @@ services:
     - birthday-network
     restart: unless-stopped
     extra_hosts:
-    - host.docker.internal:${HOST_DOCKER_INTERNAL}
+    - host.docker.internal:host-gateway
   alertmanager:
     image: quay.io/prometheus/alertmanager:v0.27.0
     container_name: alertmanager
@@ -167,16 +167,14 @@ services:
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.8.1
     container_name: node-exporter
-    networks:
-    - birthday-network
+    pid: host
+    network_mode: host
     restart: unless-stopped
     command:
     - --path.rootfs=/host
     - --collector.textfile.directory=/host/var/lib/node_exporter/textfile
     volumes:
     - /:/host:ro,rslave
-    ports:
-    - 9100:9100
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
@@ -202,19 +200,6 @@ services:
     - --config.file=/etc/blackbox/blackbox.yml
     volumes:
     - ./monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
-  vmware-exporter:
-    image: pryorda/vmware_exporter:latest
-    container_name: vmware-exporter
-    environment:
-    - VSPHERE_HOST=${VSPHERE_HOST}
-    - VSPHERE_USER=${VSPHERE_USER}
-    - VSPHERE_PASSWORD=${VSPHERE_PASSWORD}
-    - VSPHERE_IGNORE_SSL=${VSPHERE_IGNORE_SSL:-true}
-    ports:
-    - 9272:9272
-    networks:
-    - birthday-network
-    restart: unless-stopped
 networks:
   birthday-network:
     driver: bridge

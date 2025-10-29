@@ -203,3 +203,19 @@ if __name__ == "__main__":
     print("=" * 50)
     
     app.run(host="0.0.0.0", port=port, debug=debug)
+
+# Add metrics endpoint
+from metrics import metrics_endpoint, update_whatsapp_status
+import requests
+
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint"""
+    # Update WhatsApp status before returning metrics
+    try:
+        response = requests.get('http://wppconnect-bot:3005/health', timeout=2)
+        update_whatsapp_status(response.status_code == 200)
+    except:
+        update_whatsapp_status(False)
+    
+    return metrics_endpoint()
