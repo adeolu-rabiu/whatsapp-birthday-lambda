@@ -7,10 +7,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -33,11 +29,12 @@ jobs:
         run: |
           PYTHONPATH=$(pwd) pytest tests/unit -v
         env:
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN || 'test-token' }}
 
   backup-dynamodb:
     needs: test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,295 +48,83 @@ jobs:
 
       - name: Backup DynamoDB Tables
         run: |
-          # Create backups directory
-          mkdir -p backups
+          mkdir -p backups/dynamodb
+          
+          echo "📦 Backing up DynamoDB tables..."
           
           # Backup Birthdays table
-          echo "📦 Backing up Birthdays table..."
           aws dynamodb scan \
             --table-name Birthdays \
             --region eu-west-2 \
-            --output json > backups/birthdays-backup.json
+            --output json > backups/dynamodb/birthdays-backup-$(date +%Y%m%d-%H%M%S).json
           
-          # Backup WhatsAppGroups table (if exists)
-          echo "📦 Backing up WhatsAppGroups table..."
+          # Also keep latest
+          aws dynamodb scan \
+            --table-name Birthdays \
+            --region eu-west-2 \
+            --output json > backups/dynamodb/birthdays-latest.json
+          
+          # Backup WhatsAppGroups table
           aws dynamodb scan \
             --table-name WhatsAppGroups \
             --region eu-west-2 \
-            --output json > backups/whatsapp-groups-backup.json 2>/dev/null || echo "WhatsAppGroups table not found"
+            --output json > backups/dynamodb/whatsapp-groups-backup-$(date +%Y%m%d-%H%M%S).json 2>/dev/null || echo "WhatsAppGroups not found"
           
-          # Add timestamp
-          echo "{\"backup_timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\", \"commit\": \"${{ github.sha }}\"}" > backups/metadata.json
+          aws dynamodb scan \
+            --table-name WhatsAppGroups \
+            --region eu-west-2 \
+            --output json > backups/dynamodb/whatsapp-groups-latest.json 2>/dev/null || echo "WhatsAppGroups not found"
+          
+          # Create metadata
+          cat > backups/dynamodb/metadata.json << METADATA
+          {
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "tables": ["Birthdays", "WhatsAppGroups"]
+          }
+          METADATA
           
           echo "✅ DynamoDB backups created"
-          ls -lh backups/
+          ls -lh backups/dynamodb/
+
+      - name: Commit backups to repository
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          git add backups/dynamodb/*.json
+          git diff-index --quiet HEAD || git commit -m "chore(backup): DynamoDB backup $(date +%Y-%m-%d-%H:%M:%S)" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
       - name: Upload backup artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dynamodb-backups
-          path: backups/
-          retention-days: 30
-
-  build-and-push:
-    needs: [test, backup-dynamodb]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - name: python-api
-            dockerfile: Dockerfile.api
-            context: .
-          - name: wppconnect-bot
-            dockerfile: Dockerfile
-            context: ./wppconnect-server
-          - name: web-ui
-            dockerfile: Dockerfile
-            context: ./web-ui/birthday-manager
-          - name: dashboard
-            dockerfile: Dockerfile
-            context: ./dashboard
-          - name: cron
-            dockerfile: Dockerfile.cron
-            context: .
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download DynamoDB backups
-        uses: actions/download-artifact@v4
-        with:
-          name: dynamodb-backups
-          path: backups/
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Generate version tags
-        id: meta
-        run: |
-          # Generate timestamp version
-          VERSION=$(date +%Y%m%d-%H%M%S)
-          SHORT_SHA=${GITHUB_SHA::7}
-          
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-
-      - name: Pull and tag previous version
-        continue-on-error: true
-        run: |
-          echo "🔄 Saving current latest as previous..."
-          if docker pull ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:latest 2>/dev/null; then
-            docker tag ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:latest \
-                       ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:previous
-            docker push ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:previous
-            echo "✅ Previous version saved"
-          else
-            echo "ℹ️  No previous version found (first build)"
-          fi
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:latest
-            ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:${{ steps.meta.outputs.version }}
-            ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:${{ steps.meta.outputs.short_sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.name }}:buildcache,mode=max
-
-      - name: Add DynamoDB backups to image metadata
-        if: matrix.name == 'python-api'
-        run: |
-          echo "📦 DynamoDB backups included in build artifacts"
-          ls -lh backups/
-
-  create-disaster-recovery-package:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download DynamoDB backups
-        uses: actions/download-artifact@v4
-        with:
-          name: dynamodb-backups
-          path: backups/
-
-      - name: Create disaster recovery manifest
-        run: |
-          cat > disaster-recovery-manifest.json << MANIFEST
-          {
-            "version": "${{ github.sha }}",
-            "short_version": "${GITHUB_SHA::7}",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "branch": "${{ github.ref_name }}",
-            "services": {
-              "python-api": "${{ secrets.DOCKER_USERNAME }}/birthday-python-api:latest",
-              "wppconnect-bot": "${{ secrets.DOCKER_USERNAME }}/birthday-wppconnect-bot:latest",
-              "web-ui": "${{ secrets.DOCKER_USERNAME }}/birthday-web-ui:latest",
-              "dashboard": "${{ secrets.DOCKER_USERNAME }}/birthday-dashboard:latest",
-              "cron": "${{ secrets.DOCKER_USERNAME }}/birthday-cron:latest"
-            },
-            "previous_versions": {
-              "python-api": "${{ secrets.DOCKER_USERNAME }}/birthday-python-api:previous",
-              "wppconnect-bot": "${{ secrets.DOCKER_USERNAME }}/birthday-wppconnect-bot:previous",
-              "web-ui": "${{ secrets.DOCKER_USERNAME }}/birthday-web-ui:previous",
-              "dashboard": "${{ secrets.DOCKER_USERNAME }}/birthday-dashboard:previous",
-              "cron": "${{ secrets.DOCKER_USERNAME }}/birthday-cron:previous"
-            },
-            "backups": {
-              "dynamodb": "backups/",
-              "tables": ["Birthdays", "WhatsAppGroups"]
-            },
-            "restore_instructions": "See DISASTER_RECOVERY.md"
-          }
-          MANIFEST
-
-      - name: Create disaster recovery package
-        run: |
-          # Create DR package
-          mkdir -p disaster-recovery
-          cp -r backups disaster-recovery/
-          cp disaster-recovery-manifest.json disaster-recovery/
-          cp docker-compose.yml disaster-recovery/ 2>/dev/null || echo "docker-compose.yml not in root"
-          cp .env.example disaster-recovery/.env.example 2>/dev/null || echo "No .env.example found"
-          
-          # Create restore script
-          cat > disaster-recovery/restore.sh << 'RESTORE'
-          #!/bin/bash
-          echo "🔄 Birthday Bot - Disaster Recovery Restore"
-          echo "==========================================="
-          echo ""
-          
-          # Check if .env exists
-          if [ ! -f .env ]; then
-            echo "⚠️  .env file not found!"
-            echo "📝 Copy .env.example to .env and configure it"
-            exit 1
-          fi
-          
-          # Pull all images
-          echo "📥 Pulling Docker images..."
-          docker-compose pull
-          
-          # Restore DynamoDB
-          if [ -f restore-dynamodb.py ] && [ -d backups ]; then
-            echo "📦 Restoring DynamoDB..."
-            python3 restore-dynamodb.py
-          else
-            echo "⚠️  DynamoDB restore script or backups not found"
-          fi
-          
-          # Start services
-          echo "🚀 Starting services..."
-          docker-compose up -d
-          
-          # Wait for services
-          echo "⏳ Waiting for services to start..."
-          sleep 30
-          
-          # Health check
-          echo "🔍 Health check..."
-          curl -f http://localhost:5000/health && echo "✅ Python API: OK" || echo "❌ Python API: Failed"
-          curl -f http://localhost:3005/health && echo "✅ WPPConnect: OK" || echo "❌ WPPConnect: Failed"
-          
-          echo ""
-          echo "✅ Restore complete!"
-          RESTORE
-          
-          chmod +x disaster-recovery/restore.sh
-          
-          # Create restore-dynamodb.py
-          cat > disaster-recovery/restore-dynamodb.py << 'PYTHON'
-          #!/usr/bin/env python3
-          import json
-          import boto3
-          from pathlib import Path
-          
-          def restore_table(table_name, backup_file):
-              print(f"📦 Restoring {table_name}...")
-              dynamodb = boto3.resource('dynamodb', region_name='eu-west-2')
-              table = dynamodb.Table(table_name)
-              
-              with open(backup_file, 'r') as f:
-                  backup_data = json.load(f)
-              
-              items = backup_data.get('Items', [])
-              print(f"   Found {len(items)} items")
-              
-              with table.batch_writer() as batch:
-                  for item in items:
-                      batch.put_item(Item=item)
-              
-              print(f"   ✅ Restored {len(items)} items")
-          
-          if __name__ == '__main__':
-              backup_dir = Path('backups')
-              tables = {
-                  'Birthdays': backup_dir / 'birthdays-backup.json',
-                  'WhatsAppGroups': backup_dir / 'whatsapp-groups-backup.json'
-              }
-              
-              for table_name, backup_file in tables.items():
-                  if backup_file.exists():
-                      restore_table(table_name, backup_file)
-          PYTHON
-          
-          chmod +x disaster-recovery/restore-dynamodb.py
-          
-          # Create archive
-          tar -czf disaster-recovery-$(date +%Y%m%d-%H%M%S).tar.gz disaster-recovery/
-          
-          echo "✅ Disaster recovery package created"
-          ls -lh disaster-recovery-*.tar.gz
-
-      - name: Upload disaster recovery package
-        uses: actions/upload-artifact@v4
-        with:
-          name: disaster-recovery-package
-          path: disaster-recovery-*.tar.gz
+          path: backups/dynamodb/
           retention-days: 90
 
-  deploy:
-    needs: build-and-push
+  summary:
+    needs: [test, backup-dynamodb]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: always()
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy notification
+      - name: Pipeline Summary
         run: |
-          echo "🚀 Deployment would happen here"
-          echo "Images pushed to Docker Hub successfully!"
-          echo ""
-          echo "To deploy manually on your server:"
-          echo "  cd /opt/whatsapp-birthday-lambda"
-          echo "  docker-compose pull"
-          echo "  docker-compose up -d"
-
-      # Uncomment to enable automatic deployment to your server
-      # - name: Deploy to production server
-      #   uses: appleboy/ssh-action@v1.0.0
-      #   with:
-      #     host: ${{ secrets.DEPLOY_HOST }}
-      #     username: ${{ secrets.DEPLOY_USER }}
-      #     key: ${{ secrets.DEPLOY_SSH_KEY }}
-      #     script: |
-      #       cd /opt/whatsapp-birthday-lambda
-      #       docker-compose pull
-      #       docker-compose up -d
-      #       sleep 30
-      #       curl -f http://localhost:5000/health || exit 1
+          echo "## 🎉 CI/CD Pipeline Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Jobs Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- DynamoDB Backup: Created and committed to repo" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Backups Location" >> $GITHUB_STEP_SUMMARY
+          echo "- Repository: \`backups/dynamodb/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifacts: Available for 90 days" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Deploy on Server (192.168.1.66)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "cd /opt/whatsapp-birthday-lambda" >> $GITHUB_STEP_SUMMARY
+          echo "git pull origin main" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose build" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose up -d" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

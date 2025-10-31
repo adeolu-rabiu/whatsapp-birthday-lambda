@@ -215,3 +215,11 @@ monitoring/.env
 docker-compose.yml.pre-prom-stack.2025-*
 fix-alertmanager-compose.py
 generate-alertmanager-config.sh
+setup-github-secrets.sh
+docs/*
+/home/agzo/.docker/config.json
+
+# Backups
+backups/docker-images/
+backups/*.tar.gz
+logs/backup.log
