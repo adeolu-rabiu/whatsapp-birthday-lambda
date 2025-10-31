@@ -7,6 +7,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,6 +27,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest
 
       - name: Run Unit Tests
         run: |
@@ -30,7 +35,7 @@ jobs:
         env:
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
 
-  build:
+  backup-dynamodb:
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -38,59 +43,231 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
 
-      - name: Log in to ECR
+      - name: Backup DynamoDB Tables
         run: |
-          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com
+          # Create backups directory
+          mkdir -p backups
+          
+          # Backup Birthdays table
+          aws dynamodb scan \
+            --table-name Birthdays \
+            --region eu-west-2 \
+            --output json > backups/birthdays-backup.json
+          
+          # Backup WhatsAppGroups table (if exists)
+          aws dynamodb scan \
+            --table-name WhatsAppGroups \
+            --region eu-west-2 \
+            --output json > backups/whatsapp-groups-backup.json 2>/dev/null || echo "WhatsAppGroups table not found"
+          
+          # Add timestamp
+          echo "{\"backup_timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" > backups/metadata.json
+          
+          echo "✅ DynamoDB backups created"
+          ls -lh backups/
 
-      - name: Build and Push Docker Images
+      - name: Upload backup artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dynamodb-backups
+          path: backups/
+          retention-days: 30
+
+  build-and-push:
+    needs: [test, backup-dynamodb]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: python-api
+            dockerfile: Dockerfile.api
+            context: .
+          - name: wppconnect-bot
+            dockerfile: Dockerfile
+            context: ./wppconnect-server
+          - name: web-ui
+            dockerfile: Dockerfile
+            context: ./web-ui/birthday-manager
+          - name: dashboard
+            dockerfile: Dockerfile
+            context: ./dashboard
+          - name: cron
+            dockerfile: Dockerfile.cron
+            context: .
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download DynamoDB backups
+        uses: actions/download-artifact@v3
+        with:
+          name: dynamodb-backups
+          path: backups/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate version tags
+        id: meta
         run: |
-          docker build -t api:latest -f Dockerfile.api .
-          docker tag api:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/birthday-api:latest
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/birthday-api:latest
+          # Generate timestamp version
+          VERSION=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=${GITHUB_SHA::7}
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "previous_tag=previous" >> $GITHUB_OUTPUT
 
-          docker build -t baileys-bot:latest -f whatsapp-baileys-bot/Dockerfile ./whatsapp-baileys-bot
-          docker tag baileys-bot:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/baileys-bot:latest
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/baileys-bot:latest
+      - name: Pull current latest image (for versioning)
+        continue-on-error: true
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:latest || echo "No previous image found"
+
+      - name: Tag current latest as previous
+        continue-on-error: true
+        run: |
+          if docker pull ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:latest 2>/dev/null; then
+            docker tag ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:latest \
+                       ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:previous
+            docker push ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:previous
+            echo "✅ Saved previous version"
+          fi
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.context }}/${{ matrix.service.dockerfile }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:${{ steps.meta.outputs.version }}
+            ${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:${{ steps.meta.outputs.short_sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/birthday-${{ matrix.service.name }}:buildcache,mode=max
+
+  create-disaster-recovery-package:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download DynamoDB backups
+        uses: actions/download-artifact@v3
+        with:
+          name: dynamodb-backups
+          path: backups/
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create disaster recovery manifest
+        run: |
+          cat > disaster-recovery-manifest.json << 'MANIFEST'
+          {
+            "version": "${{ github.sha }}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "services": {
+              "python-api": "${{ secrets.DOCKER_USERNAME }}/birthday-python-api:latest",
+              "wppconnect-bot": "${{ secrets.DOCKER_USERNAME }}/birthday-wppconnect-bot:latest",
+              "web-ui": "${{ secrets.DOCKER_USERNAME }}/birthday-web-ui:latest",
+              "dashboard": "${{ secrets.DOCKER_USERNAME }}/birthday-dashboard:latest",
+              "cron": "${{ secrets.DOCKER_USERNAME }}/birthday-cron:latest"
+            },
+            "backups": {
+              "dynamodb": "backups/",
+              "tables": ["Birthdays", "WhatsAppGroups"]
+            },
+            "restore_instructions": "See DISASTER_RECOVERY.md"
+          }
+          MANIFEST
+
+      - name: Create disaster recovery archive
+        run: |
+          # Create DR package
+          mkdir -p disaster-recovery
+          cp -r backups disaster-recovery/
+          cp disaster-recovery-manifest.json disaster-recovery/
+          cp docker-compose.yml disaster-recovery/
+          cp .env.example disaster-recovery/.env.example
+          
+          # Create restore script
+          cat > disaster-recovery/restore.sh << 'RESTORE'
+          #!/bin/bash
+          echo "🔄 Birthday Bot - Disaster Recovery Restore"
+          echo "==========================================="
+          echo ""
+          
+          # Pull all images
+          echo "📥 Pulling Docker images..."
+          docker-compose pull
+          
+          # Restore DynamoDB
+          echo "📦 Restoring DynamoDB..."
+          python3 restore-dynamodb.py
+          
+          # Start services
+          echo "🚀 Starting services..."
+          docker-compose up -d
+          
+          echo "✅ Restore complete!"
+          RESTORE
+          
+          chmod +x disaster-recovery/restore.sh
+          
+          # Create archive
+          tar -czf disaster-recovery-$(date +%Y%m%d).tar.gz disaster-recovery/
+
+      - name: Upload disaster recovery package
+        uses: actions/upload-artifact@v3
+        with:
+          name: disaster-recovery-package
+          path: disaster-recovery-*.tar.gz
+          retention-days: 90
 
   deploy:
-    needs: build
+    needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@master
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v1
-
-      - name: Terraform Init & Apply
-        run: |
-          cd terraform
-          terraform init
-          terraform plan -out=tfplan
-          terraform apply -auto-approve
-
-      - name: Deploy React App to S3
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - run: |
-          cd web-ui/birthday-manager
-          npm install --legacy-peer-deps
-          npm run build
-          aws s3 sync build/ s3://birthday-bot-ui-${{ secrets.AWS_ACCOUNT_ID }}
-
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/whatsapp-birthday-lambda
+            
+            # Pull latest images
+            docker-compose pull
+            
+            # Restart services
+            docker-compose up -d
+            
+            # Health check
+            sleep 30
+            curl -f http://localhost:5000/health || exit 1
+            curl -f http://localhost:3005/health || exit 1
+            
+            echo "✅ Deployment successful!"
