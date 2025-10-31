@@ -46,34 +46,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
 
-      - name: Backup DynamoDB Tables
+      - name: Backup DynamoDB Tables (PRIVATE - Artifacts Only)
         run: |
           mkdir -p backups/dynamodb
           
-          echo "📦 Backing up DynamoDB tables..."
+          echo "📦 Backing up DynamoDB tables (will be stored as PRIVATE artifacts only)..."
           
           # Backup Birthdays table
           aws dynamodb scan \
             --table-name Birthdays \
             --region eu-west-2 \
-            --output json > backups/dynamodb/birthdays-backup-$(date +%Y%m%d-%H%M%S).json
-          
-          # Also keep latest
-          aws dynamodb scan \
-            --table-name Birthdays \
-            --region eu-west-2 \
-            --output json > backups/dynamodb/birthdays-latest.json
+            --output json > backups/dynamodb/birthdays-backup.json
           
           # Backup WhatsAppGroups table
           aws dynamodb scan \
             --table-name WhatsAppGroups \
             --region eu-west-2 \
-            --output json > backups/dynamodb/whatsapp-groups-backup-$(date +%Y%m%d-%H%M%S).json 2>/dev/null || echo "WhatsAppGroups not found"
-          
-          aws dynamodb scan \
-            --table-name WhatsAppGroups \
-            --region eu-west-2 \
-            --output json > backups/dynamodb/whatsapp-groups-latest.json 2>/dev/null || echo "WhatsAppGroups not found"
+            --output json > backups/dynamodb/whatsapp-groups-backup.json 2>/dev/null || echo "WhatsAppGroups not found"
           
           # Create metadata
           cat > backups/dynamodb/metadata.json << METADATA
@@ -81,26 +70,17 @@ jobs:
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
             "commit": "${{ github.sha }}",
             "branch": "${{ github.ref_name }}",
-            "tables": ["Birthdays", "WhatsAppGroups"]
+            "warning": "PRIVATE DATA - NOT FOR PUBLIC REPO"
           }
           METADATA
           
-          echo "✅ DynamoDB backups created"
+          echo "✅ DynamoDB backups created (will be stored as private artifacts)"
           ls -lh backups/dynamodb/
 
-      - name: Commit backups to repository
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          
-          git add backups/dynamodb/*.json
-          git diff-index --quiet HEAD || git commit -m "chore(backup): DynamoDB backup $(date +%Y-%m-%d-%H:%M:%S)" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-      - name: Upload backup artifacts
+      - name: Upload backup artifacts (PRIVATE - 90 days retention)
         uses: actions/upload-artifact@v4
         with:
-          name: dynamodb-backups
+          name: dynamodb-backups-${{ github.sha }}
           path: backups/dynamodb/
           retention-days: 90
 
@@ -115,11 +95,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ Jobs Completed" >> $GITHUB_STEP_SUMMARY
           echo "- Tests: Passed" >> $GITHUB_STEP_SUMMARY
-          echo "- DynamoDB Backup: Created and committed to repo" >> $GITHUB_STEP_SUMMARY
+          echo "- DynamoDB Backup: Created as PRIVATE artifact" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Backups Location" >> $GITHUB_STEP_SUMMARY
-          echo "- Repository: \`backups/dynamodb/\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Artifacts: Available for 90 days" >> $GITHUB_STEP_SUMMARY
+          echo "- **PRIVATE GitHub Artifacts** (90 days retention)" >> $GITHUB_STEP_SUMMARY
+          echo "- **NOT committed to repository**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🚀 Deploy on Server (192.168.1.66)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY

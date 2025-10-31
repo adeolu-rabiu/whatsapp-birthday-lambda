@@ -223,3 +223,9 @@ docs/*
 backups/docker-images/
 backups/*.tar.gz
 logs/backup.log
+
+# CRITICAL: Never commit backups (contains sensitive data)
+backups/
+*.json
+*backup*.json
+logs/
