@@ -278,11 +278,11 @@ WHATSAPP_GROUPS_TABLE=WhatsAppGroups
 AUTH_TOKEN=your_secure_token
 
 # Monitoring
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASS=agzo
+GRAFANA_ADMIN_USER=Username
+GRAFANA_ADMIN_PASS=password
 
 # ESXi Monitoring (Optional)
-VSPHERE_HOST=192.168.1.2
+VSPHERE_HOST=192.xx.xx.xx
 VSPHERE_USER=root
 VSPHERE_PASSWORD=your_esxi_password
 ```
@@ -314,12 +314,12 @@ docker-compose up -d
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| 🌐 Web UI | http://192.168.1.66:3000 | - |
-| 📊 Dashboard | http://192.168.1.66:8080 | - |
-| 💼 API | http://192.168.1.66:5000 | - |
-| 📈 Grafana | http://192.168.1.66:3001 | admin / agzo |
-| 🔍 Prometheus | http://192.168.1.66:9090 | - |
-| 💬 WhatsApp Bot | http://192.168.1.66:3005 | - |
+| 🌐 Web UI | http://192.xx.xx.xx:3000 | - |
+| 📊 Dashboard | http://192.xx.xx.xx:8080 | - |
+| 💼 API | http://192.168.xx.xx.xx:5000 | - |
+| 📈 Grafana | http://192.xx.xx.xx:3001 | Username / password |
+| 🔍 Prometheus | http://192.xx.xx.xx:9090 | - |
+| 💬 WhatsApp Bot | http://192.xx.xx.xx:3005 | - |
 
 ---
 
@@ -727,7 +727,7 @@ flowchart TD
 
 ### Base URL
 ```
-http://192.168.1.66:5000
+http://192.xx.xx.xx:5000
 ```
 
 ### Endpoints Overview
