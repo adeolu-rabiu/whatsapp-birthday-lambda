@@ -66,162 +66,142 @@ def load_fun_fact():
 def get_today_birthdays():
     today = datetime.datetime.now().strftime("%m-%d")
     logger.info(f"📅 Checking for birthdays on: {today}")
-
+    
     try:
         # Connect directly to DynamoDB
         dynamodb = boto3.resource('dynamodb', region_name='eu-west-2')
         birthdays_table = dynamodb.Table('Birthdays')
         groups_table = dynamodb.Table('WhatsAppGroups')
-
+        
         # Get all birthdays
         birthdays_response = birthdays_table.scan()
         birthdays = birthdays_response.get('Items', [])
-
+        
         # Handle pagination if there are more results
         while 'LastEvaluatedKey' in birthdays_response:
             birthdays_response = birthdays_table.scan(ExclusiveStartKey=birthdays_response['LastEvaluatedKey'])
             birthdays.extend(birthdays_response.get('Items', []))
-
+        
         todays_birthdays = [b for b in birthdays if b.get("birth_month_day") == today]
-
+        
         # Get all groups
         groups_response = groups_table.scan()
         groups = groups_response.get('Items', [])
-
+        
         # Handle pagination if there are more results
         while 'LastEvaluatedKey' in groups_response:
             groups_response = groups_table.scan(ExclusiveStartKey=groups_response['LastEvaluatedKey'])
             groups.extend(groups_response.get('Items', []))
-
+        
         logger.info(f"Found {len(groups)} WhatsApp groups: {', '.join([g.get('name', 'Unknown') for g in groups])}")
         group_map = {g['group_id']: g['name'] for g in groups}
-
+        
         return todays_birthdays, group_map
-
+    
     except Exception as e:
         logger.error(f"❌ Error fetching data from DynamoDB: {e}")
         return [], {}
 
 def send_message(group, message):
     """
-    Send message to WhatsApp group with improved error handling and multiple matching strategies
+    Send message to WhatsApp group by finding the group ID first
     """
     logger.info(f"Attempting to send message to group: '{group}'")
     
-    # Try different variations of the group name
-    group_variants = [
-        group,                      # Original name
-        group.replace('_', ' '),    # Replace underscores with spaces
-        group.strip(),              # Trim whitespace
-        group + ' ',                # Add trailing space (for cached names)
-        group.strip() + ' ',        # Trim then add trailing space
-        normalize_group_name(group) # Normalized version
-    ]
-
-    # Remove duplicates while preserving order
-    group_variants = list(dict.fromkeys(group_variants))
-
-    logger.info(f"Will try these group name variants: {group_variants}")
-
-    # Try all variants with regular send endpoint
-    for variant in group_variants:
-        try:
-            logger.info(f"Trying with group name variant: '{variant}'")
-            payload = {"group": variant, "message": message}
-
-            # Use a longer timeout
-            res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
-
-            if res.status_code == 200:
-                logger.info(f"✅ Sent message to '{group}' (using variant '{variant}'): {message}")
-                return True
-            else:
-                logger.warning(f"⚠️ Failed to send to '{variant}': {res.status_code} - {res.text}")
-        except Exception as e:
-            logger.warning(f"⚠️ Exception when sending to '{variant}': {e}")
-
-    # If regular send endpoint failed with all variants, try the test-send endpoint
+    # First, get all groups from wppconnect to find the matching ID
     try:
-        logger.info(f"Trying test-send endpoint with original group name: '{group}'")
-        payload = {"group": group}
-
-        test_res = requests.post(TEST_SEND_API_URL, json=payload, timeout=15)
-
-        if test_res.status_code == 200:
-            logger.info(f"✅ Test message sent to '{group}' successfully")
-
-            # If test message worked, try sending the actual message
-            try:
-                # Get the successful group info from the response
-                test_data = test_res.json()
-                successful_group = test_data.get('group', {}).get('name')
-
-                if successful_group:
-                    logger.info(f"Test succeeded with group name: '{successful_group}', now sending actual message")
-                    payload = {"group": successful_group, "message": message}
-                    res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
-
+        groups_response = requests.get(f"{WPP_BOT_URL}/groups", timeout=5)
+        if groups_response.status_code == 200:
+            wpp_groups = groups_response.json()
+            
+            # Try different variations of the group name
+            group_variants = [
+                group,                      # Original name
+                group.replace('_', ' '),    # Replace underscores with spaces
+                group.strip(),              # Trim whitespace
+                group + ' ',                # Add trailing space (for cached names)
+                group.strip() + ' ',        # Trim then add trailing space
+                normalize_group_name(group) # Normalized version
+            ]
+            
+            # Remove duplicates while preserving order
+            group_variants = list(dict.fromkeys(group_variants))
+            
+            logger.info(f"Will try these group name variants: {group_variants}")
+            
+            # Find matching group
+            matched_group = None
+            for variant in group_variants:
+                for wpp_group in wpp_groups:
+                    wpp_name = wpp_group.get('name', '')
+                    if wpp_name == variant or normalize_group_name(wpp_name) == normalize_group_name(variant):
+                        matched_group = wpp_group
+                        logger.info(f"✅ Matched variant '{variant}' to wppconnect group '{wpp_name}' (ID: {wpp_group.get('id')})")
+                        break
+                if matched_group:
+                    break
+            
+            if matched_group:
+                group_id = matched_group.get('id')
+                group_name = matched_group.get('name')
+                
+                # Try sending with the ID (preferred)
+                try:
+                    payload = {"chatId": group_id, "message": message}
+                    res = requests.post(f"{WPP_BOT_URL}/send-message", json=payload, timeout=15)
+                    
                     if res.status_code == 200:
-                        logger.info(f"✅ Sent actual message to '{successful_group}': {message}")
+                        logger.info(f"✅ Sent message to '{group_name}' using ID: {message[:50]}...")
                         return True
                     else:
-                        logger.error(f"❌ Failed to send actual message using name '{successful_group}': {res.status_code} - {res.text}")
-                else:
-                    logger.error("❌ Couldn't determine successful group name from test response")
-            except Exception as e:
-                logger.error(f"❌ Error sending actual message after test: {e}")
+                        logger.warning(f"⚠️ Failed with ID, trying with name: {res.status_code}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Exception with ID method: {e}")
+                
+                # Fallback: try with exact name from wppconnect
+                try:
+                    payload = {"group": group_name, "message": message}
+                    res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
+                    
+                    if res.status_code == 200:
+                        logger.info(f"✅ Sent message to '{group_name}' using name: {message[:50]}...")
+                        return True
+                    else:
+                        logger.warning(f"⚠️ Failed with name too: {res.status_code} - {res.text}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Exception with name method: {e}")
+            else:
+                logger.error(f"❌ Could not find group '{group}' in wppconnect groups")
+                logger.info(f"Available groups: {[g.get('name') for g in wpp_groups]}")
         else:
-            logger.error(f"❌ Test-send failed: {test_res.status_code} - {test_res.text}")
-
-            # Try to parse error info about available groups
-            try:
-                error_data = test_res.json()
-                available_groups = error_data.get('availableGroups', [])
-                if available_groups:
-                    logger.info(f"Available groups according to test-send: {available_groups}")
-
-                    # Try one more time with an exact match if we can find one
-                    normalized_group = normalize_group_name(group)
-                    for available in available_groups:
-                        available_name = available.get('name', '')
-                        available_normalized = normalize_group_name(available_name)
-
-                        # Check if normalized versions match or are similar
-                        if (available_normalized == normalized_group or
-                            available_normalized in normalized_group or
-                            normalized_group in available_normalized):
-
-                            logger.info(f"Found potential match: '{available_name}', trying it")
-                            try:
-                                payload = {"group": available_name, "message": message}
-                                res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
-
-                                if res.status_code == 200:
-                                    logger.info(f"✅ Sent message to '{available_name}': {message}")
-                                    return True
-                            except Exception as e:
-                                logger.warning(f"⚠️ Failed with matched group '{available_name}': {e}")
-            except Exception as e:
-                logger.warning(f"⚠️ Error parsing available groups: {e}")
+            logger.error(f"❌ Failed to get groups from wppconnect: {groups_response.status_code}")
     except Exception as e:
-        logger.error(f"❌ Error with test-send approach: {e}")
-
-    # Get latest diagnostics
-    try:
-        # Check WhatsApp status
-        status_url = "http://wppconnect-bot:3005/health"
-        status_res = requests.get(status_url, timeout=5)
-        logger.info(f"WhatsApp bot status: {status_res.status_code} - {status_res.text}")
-
-        # Get detailed group info
-        debug_url = "http://wppconnect-bot:3005/debug-groups"
-        debug_res = requests.get(debug_url, timeout=5)
-        if debug_res.status_code == 200:
-            debug_data = debug_res.json()
-            logger.info(f"Debug groups count: {debug_data.get('count', 0)}")
-    except Exception as e:
-        logger.error(f"❌ Failed to get diagnostic info: {e}")
-
+        logger.error(f"❌ Exception getting groups from wppconnect: {e}")
+    
+    # Old fallback method - try all variants with regular send endpoint
+    logger.info("Trying fallback method with all variants...")
+    group_variants = [
+        group,
+        group.replace('_', ' '),
+        group.strip(),
+        group + ' ',
+        group.strip() + ' ',
+        normalize_group_name(group)
+    ]
+    group_variants = list(dict.fromkeys(group_variants))
+    
+    for variant in group_variants:
+        try:
+            logger.info(f"Trying variant: '{variant}'")
+            payload = {"group": variant, "message": message}
+            res = requests.post(SEND_ENDPOINT, json=payload, timeout=15)
+            
+            if res.status_code == 200:
+                logger.info(f"✅ Sent with variant '{variant}': {message[:50]}...")
+                return True
+        except Exception as e:
+            logger.warning(f"⚠️ Exception with variant '{variant}': {e}")
+    
     logger.error(f"❌ Failed to send to '{group}' after trying all methods")
     return False
 
@@ -249,20 +229,20 @@ def list_available_whatsapp_groups():
 
 def main():
     logger.info("🚀 Starting WhatsApp Birthday Service")
-
+    
     # Check the WhatsApp connection first
     try:
         status_url = "http://wppconnect-bot:3005/health"
         status_res = requests.get(status_url, timeout=5)
         logger.info(f"WhatsApp bot status: {status_res.status_code} - {status_res.text}")
-
+        
         # List available groups
         available_groups = list_available_whatsapp_groups()
         logger.info(f"Found {len(available_groups)} groups directly from WhatsApp")
-
+        
     except Exception as e:
         logger.error(f"❌ Failed to check WhatsApp bot status: {e}")
-
+    
     birthdays, group_map = get_today_birthdays()
 
     groups_with_birthdays = set()
@@ -304,7 +284,7 @@ def main():
     # Force send a test message to all groups
     #logger.info("🔍 Sending a verification message to ensure the system is working")
     #test_message = f"🔧 System check at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\nThis is an automated test to verify the WhatsApp Birthday Service is working correctly."
-
+    
     # Get all available groups directly from WhatsApp
    # available_groups = list_available_whatsapp_groups()
    # if available_groups:
@@ -318,4 +298,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

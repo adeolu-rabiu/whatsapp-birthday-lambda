@@ -229,3 +229,5 @@ backups/
 *.json
 *backup*.json
 logs/
+backup-locally.sh
+service_manager.*

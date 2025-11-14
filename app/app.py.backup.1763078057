@@ -138,27 +138,26 @@ def send_birthday_messages():
 
 @app.route("/test-whatsapp", methods=["POST"])
 def test_whatsapp():
-    """Test WhatsApp using send_message with variants"""
+    """Test WhatsApp connection by sending a message"""
     try:
-        import sys, os
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "whatsapp"))
-        from whatsapp_birthday_service import send_message
+        import requests
         
         data = request.json
         group = data.get("group")
-        message = data.get("message", "🧪 Test message")
+        message = data.get("message", "🧪 Test message from Birthday Bot API")
         
         if not group:
-            return jsonify({"error": "group required"}), 400
+            return jsonify({"error": "group parameter required"}), 400
         
-        success = send_message(group, message)
+        response = requests.post(
+            f"{WHATSAPP_BOT_URL}/send",
+            json={"group": group, "message": message},
+            timeout=10
+        )
         
-        if success:
-            return jsonify({"status": "success", "group": group})
-        else:
-            return jsonify({"status": "failed", "group": group}), 500
+        return jsonify(response.json())
     except Exception as e:
-        app.logger.error(f"Error: {str(e)}")
+        app.logger.error(f"Error testing WhatsApp: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/today-birthdays", methods=["GET"])
