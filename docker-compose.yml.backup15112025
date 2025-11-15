@@ -35,17 +35,8 @@ services:
     - ./wppconnect-server/tokens:/app/tokens
     - ./wppconnect-server/chrome-profile:/app/profile
     - ${HOME}/.aws:/root/.aws:ro
-    command: |
-      sh -c ' 
-        echo "🧹 Cleaning Chrome lock files..."
-        find /app/tokens -type f -name "Singleton*" -delete 2>/dev/null || true
-        find /app/tokens -type s -name "Singleton*" -delete 2>/dev/null || true
-        find /app/profile -type f -name "Singleton*" -delete 2>/dev/null || true
-        find /app/profile -type s -name "Singleton*" -delete 2>/dev/null || true
-        rm -f /app/profile/SingletonLock /app/profile/SingletonSocket /app/profile/SingletonCookie 2>/dev/null || true
-        mkdir -p /app/profile
-        echo "✅ Lock files cleaned, starting server..."
-        node server.js'
+    command: "sh -lc '\n  find /app/tokens -type f -name \"Singleton*\" -delete 2>/dev/null\
+      \ || true;\n  mkdir -p /app/profile;\n  node server.js\n'\n"
     environment:
       PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
       PUPPETEER_ARGS: --no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage
