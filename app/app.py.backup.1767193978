@@ -93,31 +93,6 @@ def delete_birthday(birthday_id):
         app.logger.error(f"Error deleting birthday: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/birthdays/<birthday_id>/<group_id>", methods=["PUT"])
-def update_birthday(birthday_id, group_id):
-    """Update an existing birthday"""
-    try:
-        data = request.json
-        
-        # Remove keys from update data (can't update primary keys)
-        update_data = {k: v for k, v in data.items() if k not in ['birthday_id', 'group_id']}
-        
-        if not update_data:
-            return jsonify({"error": "No fields to update"}), 400
-        
-        from db.dynamodb_dao import BirthdayDAO
-        dao = BirthdayDAO()
-        result = dao.update_birthday(birthday_id, group_id, update_data)
-        
-        if result:
-            return jsonify({"status": "updated", "data": result})
-        else:
-            return jsonify({"error": "Update failed"}), 500
-            
-    except Exception as e:
-        app.logger.error(f"Error updating birthday: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
 @app.route("/groups", methods=["GET"])
 def get_groups():
     """Get WhatsApp groups from wppconnect-bot"""

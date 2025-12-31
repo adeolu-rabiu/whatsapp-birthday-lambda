@@ -10,7 +10,6 @@ services:
     - .env
     volumes:
     - ./logs:/app/logs
-    - ./app:/app/app
     - ${HOME}/.aws:/root/.aws:ro
     restart: unless-stopped
     healthcheck:
