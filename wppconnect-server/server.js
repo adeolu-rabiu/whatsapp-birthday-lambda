@@ -20,7 +20,7 @@ async function start() {
   client = await wppconnect.create({
     session: 'birthday-bot',
     logQR: true,
-    autoClose: 600000, // 10 minutes
+    autoClose: 0, // 10 minutes
     waitForLogin: true,
     deviceName: 'Birthday Bot',
     useChrome: true,

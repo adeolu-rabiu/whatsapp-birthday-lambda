@@ -27,7 +27,7 @@ CONNECTED=$(echo "$WHATSAPP_STATUS" | grep -c "connected\":true")
 
 if [ "$CONNECTED" -eq 0 ]; then
     log_message "⚠️ WhatsApp connection not ready. Attempting to restart the bot..."
-    docker restart ec5c2c8ff172
+    docker restart wppconnect-bot
     # Wait for it to restart
     sleep 20
     # Check again
