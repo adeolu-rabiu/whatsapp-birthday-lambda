@@ -115,6 +115,7 @@ services:
     - ${HOME}/.aws:/root/.aws:ro
     environment:
       BAILEYS_URL: http://wppconnect-bot:3005
+      TZ: Europe/London
       CRON_SCHEDULE: 0 8 * * *
       PYTHONUNBUFFERED: '1'
       AWS_REGION: eu-west-2
