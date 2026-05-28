@@ -115,6 +115,7 @@ services:
     container_name: whatsapp-birthday-lambda_cron
     volumes:
     - ./logs:/app/logs
+    - ./app:/app/app
     - ${HOME}/.aws:/root/.aws:ro
     environment:
       BAILEYS_URL: http://wppconnect-bot:3005
